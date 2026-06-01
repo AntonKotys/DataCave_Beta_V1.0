@@ -16,7 +16,9 @@
       "Bash(git -C /Users/antonkotys/IdeaProjects/DataCave_Beta ls-files --others --exclude-standard)",
       "Bash(git -C /Users/antonkotys/IdeaProjects/DataCave_Beta ls-files --others)",
       "Bash(git -C /Users/antonkotys/IdeaProjects/DataCave_Beta diff --stat HEAD)",
-      "Bash(git -C /Users/antonkotys/IdeaProjects/DataCave_Beta show HEAD --stat)"
+      "Bash(git -C /Users/antonkotys/IdeaProjects/DataCave_Beta show HEAD --stat)",
+      "Bash(git -C /Users/antonkotys/IdeaProjects/DataCave_Beta config user.email)",
+      "Bash(git -C /Users/antonkotys/IdeaProjects/DataCave_Beta config user.name)"
     ]
   }
 }
