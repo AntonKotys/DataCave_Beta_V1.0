@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Contributor Dashboard — DataCave</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background-color: #0a0e1a; color: #f1f5f9; font-family: 'Inter', system-ui, sans-serif; }
+    .gradient-text { background: linear-gradient(135deg, #2dd4bf, #6366f1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .card { background: #111827; border: 1px solid #1e293b; border-radius: 16px; }
+    .pill { display: inline-flex; align-items: center; background: #1a2236; border: 1px solid #2d3748; border-radius: 999px; padding: 3px 12px; font-size: 0.75rem; }
+    .btn-primary { background: linear-gradient(135deg, #14b8a6, #0d9488); color: #fff; border-radius: 10px; padding: 10px 20px; font-weight: 600; transition: opacity 0.15s; display: inline-block; font-size: 0.85rem; }
+    .btn-primary:hover { opacity: 0.9; }
+    nav { background: rgba(10,14,26,0.9); backdrop-filter: blur(12px); border-bottom: 1px solid #1e293b; }
+    .stat-card { background: #111827; border: 1px solid #1e293b; border-radius: 14px; padding: 20px 24px; }
+    .progress-bar { background: #1e293b; border-radius: 999px; height: 8px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #14b8a6, #6366f1); transition: width 1s ease; }
+    .progress-fill-amber { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #f59e0b, #ef4444); }
+    .quest-row { border-bottom: 1px solid #1e293b; padding: 14px 0; }
+    .quest-row:last-child { border-bottom: none; }
+    .diff-easy { background: rgba(34,197,94,0.12); color: #4ade80; }
+    .diff-medium { background: rgba(251,191,36,0.1); color: #fbbf24; }
+    .diff-hard { background: rgba(239,68,68,0.1); color: #f87171; }
+    .badge-card { background: #1a2236; border: 1px solid #2d3748; border-radius: 12px; padding: 16px; text-align: center; transition: border-color 0.2s; }
+    .badge-card:hover { border-color: #2dd4bf55; }
+    .skeleton { background: linear-gradient(90deg, #1a2236 25%, #1e293b 50%, #1a2236 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    .tier-silver { background: linear-gradient(135deg, #475569, #64748b); }
+    .earnings-row { border-bottom: 1px solid #1e293b; padding: 12px 0; display: flex; align-items: center; justify-content: space-between; }
+    .earnings-row:last-child { border-bottom: none; }
+  </style>
+</head>
+<body>
+
+<nav class="fixed top-0 left-0 right-0 z-50 px-6 py-4">
+  <div class="max-w-6xl mx-auto flex items-center justify-between">
+    <a href="/" class="flex items-center gap-2">
+      <span class="text-2xl">🪨</span>
+      <span class="text-xl font-bold gradient-text">DataCave</span>
+    </a>
+    <div class="hidden md:flex items-center gap-6 text-sm text-slate-400">
+      <a href="/quests.html" class="hover:text-teal-400 transition-colors">Browse Quests</a>
+      <a href="/company.html" class="hover:text-teal-400 transition-colors">For Companies</a>
+      <a href="/dashboard.html" class="text-teal-400 font-medium">Dashboard</a>
+    </div>
+    <div id="nav-user" class="flex items-center gap-2 text-sm text-slate-400">
+      <div class="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-indigo-600 flex items-center justify-center text-xs font-bold text-white">AM</div>
+      <span id="nav-name">Loading...</span>
+    </div>
+  </div>
+</nav>
+
+<div class="pt-28 pb-16 px-6 max-w-6xl mx-auto" id="dashboard">
+
+  <!-- skeleton state -->
+  <div id="skeleton" class="space-y-6">
+    <div class="skeleton h-32 rounded-2xl"></div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="skeleton h-24 rounded-xl"></div>
+      <div class="skeleton h-24 rounded-xl"></div>
+      <div class="skeleton h-24 rounded-xl"></div>
+      <div class="skeleton h-24 rounded-xl"></div>
+    </div>
+  </div>
+
+  <!-- actual content -->
+  <div id="content" class="hidden space-y-6">
+
+    <!-- Profile header -->
+    <div class="card p-6 flex flex-wrap gap-6 items-center justify-between">
+      <div class="flex items-center gap-5">
+        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-teal-500 to-indigo-600 flex items-center justify-center text-2xl font-bold">AM</div>
+        <div>
+          <div id="p-name" class="text-xl font-bold mb-1"></div>
+          <div id="p-tier-badge" class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold tier-silver text-white mb-2"></div>
+          <div class="flex items-center gap-4 text-sm text-slate-400">
+            <span id="p-rank"></span>
+            <span>·</span>
+            <span id="p-streak" class="text-amber-400"></span>
+          </div>
+        </div>
+      </div>
+      <div class="flex-1 max-w-xs">
+        <div class="flex justify-between text-xs text-slate-400 mb-2">
+          <span id="tier-label-low"></span>
+          <span id="tier-label-next"></span>
+        </div>
+        <div class="progress-bar">
+          <div id="tier-bar" class="progress-fill" style="width:0%"></div>
+        </div>
+        <div id="tier-hint" class="text-xs text-slate-500 mt-2"></div>
+      </div>
+      <a href="/quests.html" class="btn-primary">Find Quests &rarr;</a>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="stat-card">
+        <div class="text-xs text-slate-500 mb-1">Total Earned</div>
+        <div id="s-total" class="text-2xl font-bold text-teal-400"></div>
+        <div id="s-weekly" class="text-xs text-slate-500 mt-1"></div>
+      </div>
+      <div class="stat-card">
+        <div class="text-xs text-slate-500 mb-1">Quests Done</div>
+        <div id="s-quests" class="text-2xl font-bold text-indigo-400"></div>
+        <div class="text-xs text-slate-500 mt-1">All time</div>
+      </div>
+      <div class="stat-card">
+        <div class="text-xs text-slate-500 mb-1">Reputation</div>
+        <div id="s-rep" class="text-2xl font-bold text-amber-400"></div>
+        <div class="text-xs text-slate-500 mt-1">out of 100</div>
+      </div>
+      <div class="stat-card">
+        <div class="text-xs text-slate-500 mb-1">This Month</div>
+        <div id="s-month" class="text-2xl font-bold text-green-400"></div>
+        <div class="text-xs text-slate-500 mt-1">Earnings</div>
+      </div>
+    </div>
+
+    <!-- Active quests + Earnings -->
+    <div class="grid md:grid-cols-2 gap-6">
+
+      <!-- Active quests -->
+      <div class="card p-6">
+        <div class="flex items-center justify-between mb-5">
+          <h2 class="font-semibold">Active Quests</h2>
+          <a href="/quests.html" class="text-teal-400 text-xs hover:underline">Browse more</a>
+        </div>
+        <div id="active-quests"></div>
+      </div>
+
+      <!-- Recent earnings -->
+      <div class="card p-6">
+        <div class="flex items-center justify-between mb-5">
+          <h2 class="font-semibold">Recent Earnings</h2>
+          <span class="text-xs text-slate-500">Paid out</span>
+        </div>
+        <div id="recent-earnings"></div>
+      </div>
+    </div>
+
+    <!-- Badges -->
+    <div class="card p-6">
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="font-semibold">Achievements</h2>
+        <span id="badge-count" class="text-xs text-slate-400"></span>
+      </div>
+      <div id="badges-grid" class="grid grid-cols-3 md:grid-cols-6 gap-3"></div>
+    </div>
+
+    <!-- Rep score explainer -->
+    <div class="card p-6">
+      <h2 class="font-semibold mb-4">Your Reputation Score</h2>
+      <div class="grid md:grid-cols-3 gap-6">
+        <div>
+          <div class="flex justify-between text-xs text-slate-400 mb-2">
+            <span>Acceptance Rate</span>
+            <span class="text-teal-400">94%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:94%"></div>
+          </div>
+        </div>
+        <div>
+          <div class="flex justify-between text-xs text-slate-400 mb-2">
+            <span>On-time Submission</span>
+            <span class="text-teal-400">98%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:98%"></div>
+          </div>
+        </div>
+        <div>
+          <div class="flex justify-between text-xs text-slate-400 mb-2">
+            <span>Data Quality Score</span>
+            <span class="text-amber-400">72%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill-amber" style="width:72%"></div>
+          </div>
+        </div>
+      </div>
+      <p class="text-xs text-slate-500 mt-4">Reputation score is used to unlock higher-tier quests and is recalculated weekly based on your last 30 submissions.</p>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  fetch('/api/contributor/1/dashboard')
+    .then(r => r.json())
+    .then(d => {
+      document.getElementById('skeleton').classList.add('hidden');
+      document.getElementById('content').classList.remove('hidden');
+
+      document.getElementById('nav-name').textContent = d.name;
+      document.getElementById('p-name').textContent = d.name;
+      document.getElementById('p-tier-badge').textContent = '🥈 ' + d.tier;
+      document.getElementById('p-rank').textContent = '🌍 Global rank #' + d.globalRank.toLocaleString();
+      document.getElementById('p-streak').textContent = '🔥 ' + d.streak + '-day streak';
+
+      const pct = Math.round(d.tierProgress / d.tierTarget * 100);
+      document.getElementById('tier-label-low').textContent = d.tier;
+      document.getElementById('tier-label-next').textContent = 'Gold Researcher';
+      document.getElementById('tier-bar').style.width = pct + '%';
+      document.getElementById('tier-hint').textContent = `${d.tierProgress} / ${d.tierTarget} XP to Gold Researcher`;
+
+      document.getElementById('s-total').textContent = '$' + d.totalEarnings.toFixed(2);
+      document.getElementById('s-weekly').textContent = '+$' + d.weeklyEarnings.toFixed(2) + ' this week';
+      document.getElementById('s-quests').textContent = d.completedQuests;
+      document.getElementById('s-rep').textContent = d.reputationScore + '/100';
+      document.getElementById('s-month').textContent = '$' + d.monthlyEarnings.toFixed(2);
+
+      // Active quests
+      const diffCls = x => x === 'Easy' ? 'diff-easy' : x === 'Medium' ? 'diff-medium' : 'diff-hard';
+      document.getElementById('active-quests').innerHTML = d.activeQuests.map(q => `
+        <div class="quest-row">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-lg">${q.categoryIcon}</span>
+              <span class="text-sm font-medium leading-snug">${q.title}</span>
+            </div>
+            <span class="text-teal-400 font-semibold text-sm ml-2 shrink-0">$${q.reward.toFixed(2)}</span>
+          </div>
+          <div class="flex items-center gap-3 mt-2">
+            <span class="text-xs px-2 py-0.5 rounded-full ${diffCls(q.difficulty)}">${q.difficulty}</span>
+            <span class="text-xs text-slate-500">Due ${q.deadline}</span>
+            <a href="/quests.html" class="text-xs text-teal-400 hover:underline ml-auto">Continue &rarr;</a>
+          </div>
+        </div>
+      `).join('');
+
+      // Recent earnings
+      document.getElementById('recent-earnings').innerHTML = d.recentEarnings.map(e => `
+        <div class="earnings-row">
+          <div>
+            <div class="text-sm font-medium">${e.questTitle}</div>
+            <div class="text-xs text-slate-500">${e.date}</div>
+          </div>
+          <div class="text-right">
+            <div class="text-teal-400 font-semibold text-sm">+$${e.amount.toFixed(2)}</div>
+            <div class="text-xs text-green-600">${e.status}</div>
+          </div>
+        </div>
+      `).join('');
+
+      // Badges
+      document.getElementById('badge-count').textContent = d.badges.length + ' earned';
+      document.getElementById('badges-grid').innerHTML = d.badges.map(b => `
+        <div class="badge-card">
+          <div class="text-3xl mb-2">${b.icon}</div>
+          <div class="text-xs font-semibold mb-1">${b.name}</div>
+          <div class="text-xs text-slate-500">${b.earnedDate}</div>
+        </div>
+      `).join('');
+    })
+    .catch(() => {
+      document.getElementById('skeleton').innerHTML = `
+        <div class="card p-10 text-center">
+          <div class="text-4xl mb-4">🔌</div>
+          <div class="font-medium text-lg mb-2">Backend not running</div>
+          <div class="text-slate-400 text-sm">Start the Spring Boot server to load your dashboard</div>
+        </div>`;
+    });
+</script>
+</body>
+</html>

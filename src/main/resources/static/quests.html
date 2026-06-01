@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Browse Quests — DataCave</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background-color: #0a0e1a; color: #f1f5f9; font-family: 'Inter', system-ui, sans-serif; }
+    .gradient-text { background: linear-gradient(135deg, #2dd4bf, #6366f1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .card { background: #111827; border: 1px solid #1e293b; border-radius: 16px; }
+    .card:hover { border-color: #2dd4bf44; }
+    .pill { display: inline-flex; align-items: center; background: #1a2236; border: 1px solid #2d3748; border-radius: 999px; padding: 3px 12px; font-size: 0.75rem; }
+    .btn-primary { background: linear-gradient(135deg, #14b8a6, #0d9488); color: #fff; border-radius: 10px; padding: 10px 24px; font-weight: 600; transition: opacity 0.15s; display: inline-block; }
+    .btn-primary:hover { opacity: 0.9; }
+    nav { background: rgba(10,14,26,0.9); backdrop-filter: blur(12px); border-bottom: 1px solid #1e293b; }
+    .filter-btn { border: 1px solid #1e293b; background: #111827; border-radius: 8px; padding: 6px 16px; font-size: 0.85rem; color: #94a3b8; cursor: pointer; transition: all 0.15s; }
+    .filter-btn.active, .filter-btn:hover { border-color: #14b8a6; color: #2dd4bf; background: rgba(20,184,166,0.08); }
+    .progress-bar { background: #1e293b; border-radius: 999px; height: 5px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #14b8a6, #6366f1); }
+    .diff-easy { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.2); }
+    .diff-medium { background: rgba(251,191,36,0.12); color: #fbbf24; border: 1px solid rgba(251,191,36,0.2); }
+    .diff-hard { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
+    .quest-card { transition: transform 0.15s, border-color 0.15s; cursor: pointer; }
+    .quest-card:hover { transform: translateY(-2px); }
+    .skeleton { background: linear-gradient(90deg, #1a2236 25%, #1e293b 50%, #1a2236 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  </style>
+</head>
+<body>
+
+<nav class="fixed top-0 left-0 right-0 z-50 px-6 py-4">
+  <div class="max-w-6xl mx-auto flex items-center justify-between">
+    <a href="/" class="flex items-center gap-2">
+      <span class="text-2xl">🪨</span>
+      <span class="text-xl font-bold gradient-text">DataCave</span>
+    </a>
+    <div class="hidden md:flex items-center gap-6 text-sm text-slate-400">
+      <a href="/quests.html" class="text-teal-400 font-medium">Browse Quests</a>
+      <a href="/company.html" class="hover:text-teal-400 transition-colors">For Companies</a>
+      <a href="/dashboard.html" class="hover:text-teal-400 transition-colors">Dashboard</a>
+    </div>
+    <a href="/dashboard.html" class="text-sm text-slate-400 hover:text-white flex items-center gap-2">
+      <div class="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-indigo-600 flex items-center justify-center text-xs font-bold">AM</div>
+      Alex M.
+    </a>
+  </div>
+</nav>
+
+<div class="pt-28 pb-16 px-6 max-w-6xl mx-auto">
+
+  <!-- Header -->
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold mb-2">Browse <span class="gradient-text">Quests</span></h1>
+    <p class="text-slate-400">Complete data tasks, earn real money. New quests added daily.</p>
+  </div>
+
+  <!-- Filters + search -->
+  <div class="flex flex-wrap gap-3 mb-8">
+    <input
+      id="search"
+      type="text"
+      placeholder="Search quests..."
+      class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-teal-500 w-64"
+      oninput="filterQuests()"
+    />
+    <div class="flex flex-wrap gap-2" id="category-filters">
+      <button class="filter-btn active" data-cat="all" onclick="setCategory(this, 'all')">All</button>
+      <button class="filter-btn" data-cat="Audio" onclick="setCategory(this, 'Audio')">🎙️ Audio</button>
+      <button class="filter-btn" data-cat="Image" onclick="setCategory(this, 'Image')">📸 Image</button>
+      <button class="filter-btn" data-cat="Text & Label" onclick="setCategory(this, 'Text & Label')">🏷️ Labeling</button>
+      <button class="filter-btn" data-cat="Motion & Location" onclick="setCategory(this, 'Motion & Location')">📍 Location</button>
+      <button class="filter-btn" data-cat="Health Data" onclick="setCategory(this, 'Health Data')">🩺 Health</button>
+    </div>
+  </div>
+
+  <!-- Sort bar -->
+  <div class="flex items-center justify-between mb-6">
+    <div id="quest-count" class="text-slate-400 text-sm">Loading quests...</div>
+    <select id="sort" onchange="sortQuests()" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-teal-500">
+      <option value="reward-desc">Highest reward</option>
+      <option value="reward-asc">Lowest reward</option>
+      <option value="time-asc">Quickest first</option>
+      <option value="progress-desc">Almost full</option>
+    </select>
+  </div>
+
+  <!-- Quest grid -->
+  <div id="quest-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+    <!-- skeletons -->
+    <div class="card p-6 h-52"><div class="skeleton h-4 w-1/2 mb-3"></div><div class="skeleton h-3 w-full mb-2"></div><div class="skeleton h-3 w-3/4"></div></div>
+    <div class="card p-6 h-52"><div class="skeleton h-4 w-1/2 mb-3"></div><div class="skeleton h-3 w-full mb-2"></div><div class="skeleton h-3 w-3/4"></div></div>
+    <div class="card p-6 h-52"><div class="skeleton h-4 w-1/2 mb-3"></div><div class="skeleton h-3 w-full mb-2"></div><div class="skeleton h-3 w-3/4"></div></div>
+  </div>
+</div>
+
+<!-- Quest detail modal -->
+<div id="modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+  <div class="card max-w-lg w-full p-8 relative">
+    <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-500 hover:text-white text-xl">&times;</button>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<script>
+  let allQuests = [];
+  let activeCategory = 'all';
+
+  fetch('/api/quests')
+    .then(r => r.json())
+    .then(data => {
+      allQuests = data;
+      renderQuests(allQuests);
+    })
+    .catch(() => {
+      document.getElementById('quest-grid').innerHTML = `
+        <div class="col-span-3 text-center py-16 text-slate-500">
+          <div class="text-4xl mb-4">🔌</div>
+          <div class="font-medium">Backend not running</div>
+          <div class="text-sm mt-1">Start the Spring Boot server to load live quests</div>
+        </div>`;
+      document.getElementById('quest-count').textContent = '0 quests';
+    });
+
+  function diffClass(d) {
+    if (d === 'Easy') return 'diff-easy';
+    if (d === 'Medium') return 'diff-medium';
+    return 'diff-hard';
+  }
+
+  function renderQuests(quests) {
+    const grid = document.getElementById('quest-grid');
+    document.getElementById('quest-count').textContent = `${quests.length} quest${quests.length !== 1 ? 's' : ''} available`;
+    if (quests.length === 0) {
+      grid.innerHTML = '<div class="col-span-3 text-center py-16 text-slate-500">No quests match your filters.</div>';
+      return;
+    }
+    grid.innerHTML = quests.map(q => {
+      const pct = Math.round(q.completedCount / q.requiredCount * 100);
+      return `
+        <div class="card p-6 quest-card" onclick="openModal(${q.id})">
+          <div class="flex items-start justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-2xl">${q.categoryIcon}</span>
+              <span class="pill text-slate-300">${q.category}</span>
+            </div>
+            <span class="text-teal-400 font-bold text-lg">$${q.reward.toFixed(2)}</span>
+          </div>
+          <h3 class="font-semibold text-sm mb-2 leading-snug">${q.title}</h3>
+          <p class="text-slate-500 text-xs mb-4 leading-relaxed line-clamp-2">${q.description}</p>
+          <div class="flex items-center gap-2 flex-wrap mb-4">
+            <span class="pill rounded-full text-xs px-2 py-0.5 ${diffClass(q.difficulty)}">${q.difficulty}</span>
+            ${q.estimatedMinutes > 0 ? `<span class="text-xs text-slate-500">~${q.estimatedMinutes} min</span>` : ''}
+            <span class="text-xs text-slate-500 ml-auto">Due ${q.deadline}</span>
+          </div>
+          <div class="progress-bar mb-1">
+            <div class="progress-fill" style="width:${pct}%"></div>
+          </div>
+          <div class="flex justify-between text-xs text-slate-600">
+            <span>${q.completedCount.toLocaleString()} submitted</span>
+            <span>${pct}% full</span>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function setCategory(btn, cat) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeCategory = cat;
+    filterQuests();
+  }
+
+  function filterQuests() {
+    const search = document.getElementById('search').value.toLowerCase();
+    let result = activeCategory === 'all' ? allQuests : allQuests.filter(q => q.category === activeCategory);
+    if (search) result = result.filter(q => q.title.toLowerCase().includes(search) || q.description.toLowerCase().includes(search) || q.company.toLowerCase().includes(search));
+    sortAndRender(result);
+  }
+
+  function sortQuests() { filterQuests(); }
+
+  function sortAndRender(list) {
+    const sort = document.getElementById('sort').value;
+    const sorted = [...list].sort((a, b) => {
+      if (sort === 'reward-desc') return b.reward - a.reward;
+      if (sort === 'reward-asc') return a.reward - b.reward;
+      if (sort === 'time-asc') return a.estimatedMinutes - b.estimatedMinutes;
+      if (sort === 'progress-desc') return (b.completedCount / b.requiredCount) - (a.completedCount / a.requiredCount);
+      return 0;
+    });
+    renderQuests(sorted);
+  }
+
+  function openModal(id) {
+    const q = allQuests.find(x => x.id === id);
+    if (!q) return;
+    const pct = Math.round(q.completedCount / q.requiredCount * 100);
+    document.getElementById('modal-content').innerHTML = `
+      <div class="flex items-center gap-3 mb-5">
+        <span class="text-4xl">${q.categoryIcon}</span>
+        <div>
+          <div class="font-bold text-lg leading-snug">${q.title}</div>
+          <div class="text-slate-400 text-sm">${q.company}</div>
+        </div>
+        <div class="ml-auto text-teal-400 font-bold text-2xl">$${q.reward.toFixed(2)}</div>
+      </div>
+      <p class="text-slate-300 text-sm leading-relaxed mb-5">${q.description}</p>
+      <div class="grid grid-cols-2 gap-3 mb-5 text-sm">
+        <div class="bg-slate-800 rounded-lg p-3"><div class="text-slate-500 text-xs mb-1">Difficulty</div><div class="font-medium">${q.difficulty}</div></div>
+        <div class="bg-slate-800 rounded-lg p-3"><div class="text-slate-500 text-xs mb-1">Time</div><div class="font-medium">${q.estimatedMinutes > 0 ? '~' + q.estimatedMinutes + ' min' : 'Passive'}</div></div>
+        <div class="bg-slate-800 rounded-lg p-3"><div class="text-slate-500 text-xs mb-1">Deadline</div><div class="font-medium">${q.deadline}</div></div>
+        <div class="bg-slate-800 rounded-lg p-3"><div class="text-slate-500 text-xs mb-1">Spots left</div><div class="font-medium">${(q.requiredCount - q.completedCount).toLocaleString()}</div></div>
+      </div>
+      <div class="progress-bar mb-1">
+        <div class="progress-fill" style="width:${pct}%"></div>
+      </div>
+      <div class="text-xs text-slate-500 mb-6">${q.completedCount.toLocaleString()} / ${q.requiredCount.toLocaleString()} submissions (${pct}% full)</div>
+      <div class="flex flex-wrap gap-2 mb-6">
+        ${q.tags.map(t => `<span class="pill">#${t}</span>`).join('')}
+      </div>
+      <button onclick="closeModal()" class="btn-primary w-full text-center py-3">Accept Quest</button>
+    `;
+    document.getElementById('modal').classList.remove('hidden');
+    document.getElementById('modal').classList.add('flex');
+  }
+
+  function closeModal() {
+    document.getElementById('modal').classList.add('hidden');
+    document.getElementById('modal').classList.remove('flex');
+  }
+
+  document.getElementById('modal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+</script>
+</body>
+</html>

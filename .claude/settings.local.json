@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pandoc \"/Users/antonkotys/Downloads/Tbilisi_Module3.docx\" -o /tmp/module3.md)",
+      "Read(//tmp/**)",
+      "Bash(pdftotext \"/Users/antonkotys/Downloads/DataCave_Module2_Submission \\(3\\).pdf\" -)",
+      "Bash(pdftotext \"/Users/antonkotys/Downloads/DataCave_Idea_V1.2.pdf\" -)",
+      "Bash(python3 -c ' *)",
+      "Bash(pip3 install *)",
+      "Bash(mkdir -p /Users/antonkotys/IdeaProjects/DataCave_Beta/.claude)",
+      "Bash(./gradlew compileJava)",
+      "Bash(./gradlew build *)",
+      "mcp__Claude_Preview__preview_start"
+    ]
+  }
+}

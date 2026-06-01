@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DataCave — The Ethical Data Marketplace</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            cave: { 950: '#05080f', 900: '#0a0e1a', 800: '#111827', 700: '#1a2236' },
+            teal: { 400: '#2dd4bf', 500: '#14b8a6', 600: '#0d9488' },
+            amber: { 400: '#fbbf24', 500: '#f59e0b' },
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #0a0e1a; color: #f1f5f9; font-family: 'Inter', system-ui, sans-serif; }
+    .gradient-hero { background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(20,184,166,0.15), transparent); }
+    .gradient-text { background: linear-gradient(135deg, #2dd4bf, #6366f1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .card { background: #111827; border: 1px solid #1e293b; border-radius: 16px; }
+    .card:hover { border-color: #2dd4bf44; transition: border-color 0.2s; }
+    .pill { display: inline-flex; align-items: center; background: #1a2236; border: 1px solid #2d3748; border-radius: 999px; padding: 4px 14px; font-size: 0.75rem; }
+    .btn-primary { background: linear-gradient(135deg, #14b8a6, #0d9488); color: #fff; border-radius: 10px; padding: 12px 28px; font-weight: 600; transition: opacity 0.15s; }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-outline { border: 1px solid #2dd4bf; color: #2dd4bf; border-radius: 10px; padding: 12px 28px; font-weight: 600; transition: background 0.15s; }
+    .btn-outline:hover { background: rgba(45,212,191,0.08); }
+    .tier-badge { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 6px 16px; font-size: 0.85rem; font-weight: 600; }
+    nav { background: rgba(10,14,26,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #1e293b; }
+    .stat-card { background: linear-gradient(135deg, #111827, #0f172a); border: 1px solid #1e293b; border-radius: 12px; padding: 24px; }
+    .quest-mini { background: #111827; border: 1px solid #1e293b; border-radius: 12px; padding: 16px; transition: border-color 0.2s; }
+    .quest-mini:hover { border-color: #2dd4bf55; }
+    .step-num { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #14b8a6, #6366f1); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; flex-shrink: 0; }
+    .progress-bar { background: #1e293b; border-radius: 999px; height: 6px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #14b8a6, #6366f1); }
+  </style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="fixed top-0 left-0 right-0 z-50 px-6 py-4">
+  <div class="max-w-6xl mx-auto flex items-center justify-between">
+    <a href="/" class="flex items-center gap-2">
+      <span class="text-2xl">🪨</span>
+      <span class="text-xl font-bold gradient-text">DataCave</span>
+    </a>
+    <div class="hidden md:flex items-center gap-6 text-sm text-slate-400">
+      <a href="/quests.html" class="hover:text-teal-400 transition-colors">Browse Quests</a>
+      <a href="/company.html" class="hover:text-teal-400 transition-colors">For Companies</a>
+      <a href="/dashboard.html" class="hover:text-teal-400 transition-colors">Dashboard</a>
+    </div>
+    <div class="flex items-center gap-3">
+      <a href="/quests.html" class="btn-outline text-sm py-2 px-5">Start Earning</a>
+      <a href="/company.html" class="btn-primary text-sm py-2 px-5">Get Data</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="gradient-hero pt-40 pb-24 px-6">
+  <div class="max-w-4xl mx-auto text-center">
+    <div class="pill mb-6 text-teal-400 mx-auto w-fit">
+      <span class="w-2 h-2 rounded-full bg-teal-400 mr-2 animate-pulse"></span>
+      Ethical AI data. Fairly compensated.
+    </div>
+    <h1 class="text-5xl md:text-7xl font-bold leading-tight mb-6">
+      The data your AI needs.<br/>
+      <span class="gradient-text">The pay people deserve.</span>
+    </h1>
+    <p class="text-xl text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+      DataCave connects AI teams with a global network of contributors who collect high-quality,
+      labelled, consented data — through gamified quests, fair pay, and full transparency.
+    </p>
+    <div class="flex flex-wrap gap-4 justify-center">
+      <a href="/quests.html" class="btn-primary text-base px-8 py-4">Browse Quests &rarr;</a>
+      <a href="/company.html" class="btn-outline text-base px-8 py-4">I need data</a>
+    </div>
+    <p class="mt-6 text-xs text-slate-600">GDPR-compliant · Consent-first · Ethically sourced</p>
+  </div>
+</section>
+
+<!-- Stats bar -->
+<section class="border-y border-slate-800 py-10 px-6">
+  <div class="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+    <div>
+      <div class="text-3xl font-bold text-teal-400">2026–28</div>
+      <div class="text-sm text-slate-500 mt-1">Year public LLM training data runs out</div>
+    </div>
+    <div>
+      <div class="text-3xl font-bold text-indigo-400">74%</div>
+      <div class="text-sm text-slate-500 mt-1">People say their data is their property</div>
+    </div>
+    <div>
+      <div class="text-3xl font-bold text-amber-400">14×</div>
+      <div class="text-sm text-slate-500 mt-1">Pay gap for the same annotation task globally</div>
+    </div>
+    <div>
+      <div class="text-3xl font-bold text-teal-400">15/15</div>
+      <div class="text-sm text-slate-500 mt-1">Major platforms scored below fair-work minimum</div>
+    </div>
+  </div>
+</section>
+
+<!-- How it works -->
+<section class="py-20 px-6">
+  <div class="max-w-5xl mx-auto">
+    <div class="text-center mb-14">
+      <h2 class="text-3xl font-bold mb-3">How DataCave works</h2>
+      <p class="text-slate-400">Two sides. One trusted marketplace.</p>
+    </div>
+    <div class="grid md:grid-cols-2 gap-10">
+      <!-- Contributor flow -->
+      <div class="card p-8">
+        <div class="text-teal-400 font-semibold text-sm mb-6 uppercase tracking-wider">For Contributors</div>
+        <div class="space-y-6">
+          <div class="flex gap-4">
+            <div class="step-num text-white">1</div>
+            <div>
+              <div class="font-semibold mb-1">Browse Quests</div>
+              <div class="text-slate-400 text-sm">Pick data tasks that fit your life — photograph shelves, record audio, complete surveys. Filter by category and reward.</div>
+            </div>
+          </div>
+          <div class="flex gap-4">
+            <div class="step-num text-white">2</div>
+            <div>
+              <div class="font-semibold mb-1">Complete & Submit</div>
+              <div class="text-slate-400 text-sm">Use our mobile app to collect and submit data. Quality is verified automatically and by peer review.</div>
+            </div>
+          </div>
+          <div class="flex gap-4">
+            <div class="step-num text-white">3</div>
+            <div>
+              <div class="font-semibold mb-1">Earn & Level Up</div>
+              <div class="text-slate-400 text-sm">Get paid per submission. Build your reputation score. Rise from Bronze → Silver → Gold and unlock higher-paying quests.</div>
+            </div>
+          </div>
+        </div>
+        <a href="/quests.html" class="mt-8 block btn-primary text-center">Start earning today</a>
+      </div>
+
+      <!-- Company flow -->
+      <div class="card p-8">
+        <div class="text-indigo-400 font-semibold text-sm mb-6 uppercase tracking-wider">For AI Companies</div>
+        <div class="space-y-6">
+          <div class="flex gap-4">
+            <div class="step-num text-white">1</div>
+            <div>
+              <div class="font-semibold mb-1">Post a Quest</div>
+              <div class="text-slate-400 text-sm">Define your data need — type, format, quality criteria, volume. Set a reward per submission and deadline.</div>
+            </div>
+          </div>
+          <div class="flex gap-4">
+            <div class="step-num text-white">2</div>
+            <div>
+              <div class="font-semibold mb-1">Contributors Collect</div>
+              <div class="text-slate-400 text-sm">Our verified contributor network collects your data with full consent documentation, GPS metadata, and audit trails.</div>
+            </div>
+          </div>
+          <div class="flex gap-4">
+            <div class="step-num text-white">3</div>
+            <div>
+              <div class="font-semibold mb-1">Receive Clean Datasets</div>
+              <div class="text-slate-400 text-sm">Download GDPR-compliant, ethics-verified datasets. Full provenance documentation included for regulatory compliance.</div>
+            </div>
+          </div>
+        </div>
+        <a href="/company.html" class="mt-8 block btn-outline text-center">Request a dataset</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Live quests preview -->
+<section class="py-16 px-6 bg-cave-800 border-y border-slate-800">
+  <div class="max-w-5xl mx-auto">
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h2 class="text-2xl font-bold">Live Quests</h2>
+        <p class="text-slate-400 text-sm mt-1">Earn money completing real data tasks right now</p>
+      </div>
+      <a href="/quests.html" class="text-teal-400 text-sm hover:underline">View all &rarr;</a>
+    </div>
+    <div id="quests-preview" class="grid md:grid-cols-3 gap-4">
+      <div class="quest-mini animate-pulse bg-slate-800 h-32 rounded-xl"></div>
+      <div class="quest-mini animate-pulse bg-slate-800 h-32 rounded-xl"></div>
+      <div class="quest-mini animate-pulse bg-slate-800 h-32 rounded-xl"></div>
+    </div>
+  </div>
+</section>
+
+<!-- Contributor tiers -->
+<section class="py-20 px-6">
+  <div class="max-w-5xl mx-auto">
+    <div class="text-center mb-14">
+      <h2 class="text-3xl font-bold mb-3">Contributor Reputation System</h2>
+      <p class="text-slate-400">Quality work unlocks better quests and higher rewards.</p>
+    </div>
+    <div class="grid md:grid-cols-3 gap-6">
+      <div class="card p-7 text-center">
+        <div class="text-4xl mb-4">🥉</div>
+        <div class="tier-badge bg-amber-900/30 text-amber-400 border border-amber-800/50 mx-auto mb-4">Bronze Contributor</div>
+        <p class="text-slate-400 text-sm mb-5">Just starting out. Access to entry-level quests. Build your acceptance rate and streak.</p>
+        <div class="text-left space-y-2 text-sm text-slate-300">
+          <div>✓ Audio, image, and labeling quests</div>
+          <div>✓ $1–5 per submission</div>
+          <div>✓ Weekly payouts</div>
+        </div>
+      </div>
+      <div class="card p-7 text-center border-teal-800/50">
+        <div class="text-4xl mb-4">🥈</div>
+        <div class="tier-badge bg-slate-700/50 text-slate-200 border border-slate-600 mx-auto mb-4">Silver Mapper</div>
+        <p class="text-slate-400 text-sm mb-5">Proven quality. Unlocks location quests, survey packs, and specialist roles.</p>
+        <div class="text-left space-y-2 text-sm text-slate-300">
+          <div>✓ All Bronze quests + location & motion</div>
+          <div>✓ $3–12 per submission</div>
+          <div>✓ Priority quest access</div>
+          <div>✓ Bonus streak rewards</div>
+        </div>
+      </div>
+      <div class="card p-7 text-center">
+        <div class="text-4xl mb-4">🥇</div>
+        <div class="tier-badge bg-yellow-900/30 text-yellow-300 border border-yellow-700/50 mx-auto mb-4">Gold Researcher</div>
+        <p class="text-slate-400 text-sm mb-5">Elite tier. Access to high-value health data quests, wearable contributions, and royalties.</p>
+        <div class="text-left space-y-2 text-sm text-slate-300">
+          <div>✓ All Silver quests + health & biometric</div>
+          <div>✓ $8–50 per submission + royalties</div>
+          <div>✓ Exclusive seasonal competitions</div>
+          <div>✓ Dedicated support</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Trust signals -->
+<section class="py-16 px-6 bg-cave-800 border-y border-slate-800">
+  <div class="max-w-4xl mx-auto text-center">
+    <h2 class="text-2xl font-bold mb-4">Built on consent. Verified at every step.</h2>
+    <p class="text-slate-400 mb-10 max-w-2xl mx-auto">Every dataset on DataCave comes with full provenance documentation — contributor consent records, collection metadata, and ethics verification. AI teams get legal peace of mind. Contributors know exactly how their data is used.</p>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+      <div class="text-center">
+        <div class="text-3xl mb-2">✅</div>
+        <div class="font-medium text-sm">GDPR Compliant</div>
+        <div class="text-slate-500 text-xs mt-1">Every dataset</div>
+      </div>
+      <div class="text-center">
+        <div class="text-3xl mb-2">📋</div>
+        <div class="font-medium text-sm">Consent Documented</div>
+        <div class="text-slate-500 text-xs mt-1">Full audit trail</div>
+      </div>
+      <div class="text-center">
+        <div class="text-3xl mb-2">🔍</div>
+        <div class="font-medium text-sm">Ethics Verified</div>
+        <div class="text-slate-500 text-xs mt-1">Independent review</div>
+      </div>
+      <div class="text-center">
+        <div class="text-3xl mb-2">⚖️</div>
+        <div class="font-medium text-sm">EU AI Act Ready</div>
+        <div class="text-slate-500 text-xs mt-1">Compliant by design</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="py-24 px-6">
+  <div class="max-w-3xl mx-auto text-center">
+    <h2 class="text-4xl font-bold mb-4">Join the ethical data revolution.</h2>
+    <p class="text-slate-400 text-lg mb-10">Whether you have a smartphone and spare time, or a model that needs training data — DataCave is for you.</p>
+    <div class="flex flex-wrap gap-4 justify-center">
+      <a href="/quests.html" class="btn-primary px-8 py-4 text-base">Start contributing &rarr;</a>
+      <a href="/company.html" class="btn-outline px-8 py-4 text-base">Post a quest</a>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="border-t border-slate-800 py-10 px-6 text-center text-slate-600 text-sm">
+  <div class="flex items-center justify-center gap-2 mb-3">
+    <span class="text-xl">🪨</span>
+    <span class="font-bold text-slate-400">DataCave</span>
+  </div>
+  <p>The ethical data marketplace · Consent-first · GDPR-compliant · Fair pay</p>
+  <p class="mt-2">© 2026 DataCave · Built by Anton, Artem & Konrad</p>
+</footer>
+
+<script>
+  // Load live quests preview
+  fetch('/api/quests')
+    .then(r => r.json())
+    .then(quests => {
+      const container = document.getElementById('quests-preview');
+      container.innerHTML = quests.slice(0, 3).map(q => `
+        <div class="quest-mini cursor-pointer" onclick="location.href='/quests.html'">
+          <div class="flex items-start justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <span class="text-xl">${q.categoryIcon}</span>
+              <span class="text-xs pill">${q.category}</span>
+            </div>
+            <span class="text-teal-400 font-bold text-sm">$${q.reward.toFixed(2)}</span>
+          </div>
+          <div class="font-medium text-sm mb-2">${q.title}</div>
+          <div class="flex items-center justify-between text-xs text-slate-500">
+            <span>${q.company}</span>
+            <span>~${q.estimatedMinutes} min</span>
+          </div>
+          <div class="progress-bar mt-3">
+            <div class="progress-fill" style="width: ${Math.round(q.completedCount / q.requiredCount * 100)}%"></div>
+          </div>
+          <div class="text-xs text-slate-600 mt-1">${q.completedCount} / ${q.requiredCount} submissions</div>
+        </div>
+      `).join('');
+    })
+    .catch(() => {
+      document.getElementById('quests-preview').innerHTML = '<div class="text-slate-500 text-sm col-span-3 text-center py-8">Start the backend to see live quests</div>';
+    });
+</script>
+</body>
+</html>
