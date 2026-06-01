@@ -10,7 +10,13 @@
       "Bash(mkdir -p /Users/antonkotys/IdeaProjects/DataCave_Beta/.claude)",
       "Bash(./gradlew compileJava)",
       "Bash(./gradlew build *)",
-      "mcp__Claude_Preview__preview_start"
+      "mcp__Claude_Preview__preview_start",
+      "Bash(git -C /Users/antonkotys/IdeaProjects/DataCave_Beta status)",
+      "Bash(git -C /Users/antonkotys/IdeaProjects/DataCave_Beta log --oneline -5)",
+      "Bash(git -C /Users/antonkotys/IdeaProjects/DataCave_Beta ls-files --others --exclude-standard)",
+      "Bash(git -C /Users/antonkotys/IdeaProjects/DataCave_Beta ls-files --others)",
+      "Bash(git -C /Users/antonkotys/IdeaProjects/DataCave_Beta diff --stat HEAD)",
+      "Bash(git -C /Users/antonkotys/IdeaProjects/DataCave_Beta show HEAD --stat)"
     ]
   }
 }
