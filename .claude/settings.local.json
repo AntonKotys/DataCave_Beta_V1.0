@@ -18,7 +18,29 @@
       "Bash(git -C /Users/antonkotys/IdeaProjects/DataCave_Beta diff --stat HEAD)",
       "Bash(git -C /Users/antonkotys/IdeaProjects/DataCave_Beta show HEAD --stat)",
       "Bash(git -C /Users/antonkotys/IdeaProjects/DataCave_Beta config user.email)",
-      "Bash(git -C /Users/antonkotys/IdeaProjects/DataCave_Beta config user.name)"
+      "Bash(git -C /Users/antonkotys/IdeaProjects/DataCave_Beta config user.name)",
+      "Bash(npm --version)",
+      "Read(//opt/homebrew/bin/**)",
+      "Read(//Users/antonkotys/**)",
+      "Bash(brew --version)",
+      "Bash(brew install *)",
+      "Read(//private/tmp/**)",
+      "Bash(curl -s -X POST http://localhost:8080/api/submissions -F contributorId=1 -F questId=2 -F type=PHOTO -F 'file=@/tmp/shelf.jpg;type=image/jpeg')",
+      "Bash(python3 -m json.tool)",
+      "Bash(curl -s -X POST http://localhost:8080/api/submissions -F contributorId=1 -F questId=6 -F type=SURVEY -F 'payload={\"hoursSlept\":7,\"quality\":\"good\",\"caffeine\":true}')",
+      "Bash(curl -s -X POST http://localhost:8080/api/submissions -F contributorId=1 -F questId=5 -F type=LOCATION -F 'payload={\"lat\":41.7151,\"lng\":44.8271,\"accuracy\":12}')",
+      "Bash(curl -s \"http://localhost:8080/api/contributor/1/dashboard\")",
+      "Bash(curl -s -o /dev/null -w \"file status: %{http_code}, type: %{content_type}, size: %{size_download}\\\\n\" \"http://localhost:8080/api/submissions/2/file\")",
+      "Bash(curl -s \"http://localhost:8080/api/contributor/1/submissions\")",
+      "Bash(python3 -c \"import sys,json; print\\(len\\(json.load\\(sys.stdin\\)\\), 'submissions'\\)\")",
+      "Bash(python3 -c \"import sys,json; q=json.load\\(sys.stdin\\); print\\('created id', q['id'], '-', q['title'], q['categoryIcon'], '$'+str\\(q['reward']\\)\\)\")",
+      "Bash(curl -s \"http://localhost:8080/api/quests\")",
+      "Bash(python3 -c \"import sys,json; print\\(len\\(json.load\\(sys.stdin\\)\\), 'quests'\\)\")",
+      "Bash(curl -s -X POST http://localhost:8080/api/quests -H 'Content-Type: application/json' -d '{\"title\":\"Bird Song Recordings\",\"description\":\"Record 20s of birdsong in a park.\",\"category\":\"Audio\",\"reward\":3.5,\"difficulty\":\"Easy\",\"deadline\":\"Aug 1, 2026\",\"requiredCount\":400,\"company\":\"WildAudio\",\"estimatedMinutes\":7,\"tags\":[\"audio\",\"nature\"]}' -w '\\\\nHTTP %{http_code}\\\\n')",
+      "Bash(python3 -c \"import sys,json; q=json.load\\(sys.stdin\\); print\\('OK -> id', q['id'], q['categoryIcon'], q['title'], '\\\\$'+str\\(q['reward']\\), '| completed', q['completedCount']\\)\")",
+      "Bash(pkill -f \"bootRun\")",
+      "Bash(pkill -f \"DataCaveBetaApplication\")",
+      "Bash(curl -sf http://localhost:8080/api/quests)"
     ]
   }
 }

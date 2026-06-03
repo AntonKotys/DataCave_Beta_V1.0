@@ -216,13 +216,196 @@
         <div class="progress-fill" style="width:${pct}%"></div>
       </div>
       <div class="text-xs text-slate-500 mb-6">${q.completedCount.toLocaleString()} / ${q.requiredCount.toLocaleString()} submissions (${pct}% full)</div>
-      <div class="flex flex-wrap gap-2 mb-6">
+      <div class="flex flex-wrap gap-2 mb-5">
         ${q.tags.map(t => `<span class="pill">#${t}</span>`).join('')}
       </div>
-      <button onclick="closeModal()" class="btn-primary w-full text-center py-3">Accept Quest</button>
+      <div class="border-t border-slate-800 pt-5">
+        <div class="text-sm font-semibold mb-1">Complete this quest</div>
+        <div class="text-xs text-slate-500 mb-4">🔒 By submitting you consent to share this data with ${q.company} for the stated purpose.</div>
+        <div id="collector"></div>
+        <div id="submit-status" class="text-xs mt-3 min-h-[16px]"></div>
+        <button id="submit-btn" onclick="submitQuest(${q.id})" class="btn-primary w-full text-center py-3 mt-2">Submit &amp; Earn $${q.reward.toFixed(2)}</button>
+      </div>
     `;
+    modalQuest = q;
+    collected = { file: null, payload: null };
+    renderCollector(q);
     document.getElementById('modal').classList.remove('hidden');
     document.getElementById('modal').classList.add('flex');
+  }
+
+  // ---- collection logic ---------------------------------------------------
+  let modalQuest = null;
+  let collected = { file: null, payload: null };
+  let mediaRecorder = null;
+  let audioChunks = [];
+
+  function modeFor(category) {
+    if (category === 'Image') return 'PHOTO';
+    if (category === 'Audio') return 'AUDIO';
+    if (category === 'Motion & Location') return 'LOCATION';
+    if (category === 'Health Data') return 'SURVEY';
+    return 'LABEL';
+  }
+
+  function setStatus(msg, color = 'text-slate-400') {
+    const el = document.getElementById('submit-status');
+    if (el) { el.className = `text-xs mt-3 min-h-[16px] ${color}`; el.textContent = msg; }
+  }
+
+  function renderCollector(q) {
+    const mode = modeFor(q.category);
+    const c = document.getElementById('collector');
+    if (mode === 'PHOTO') {
+      c.innerHTML = `
+        <label class="block">
+          <span class="btn-outline inline-block text-sm py-2 px-4 cursor-pointer">📷 Take / choose photo</span>
+          <input type="file" accept="image/*" capture="environment" class="hidden" onchange="onPhotoPick(event)"/>
+        </label>
+        <img id="photo-preview" class="hidden mt-3 rounded-lg max-h-48 w-full object-cover"/>`;
+    } else if (mode === 'AUDIO') {
+      c.innerHTML = `
+        <div class="flex gap-2 items-center">
+          <button id="rec-btn" onclick="toggleRecord()" class="btn-outline text-sm py-2 px-4">⏺ Record</button>
+          <span id="rec-label" class="text-xs text-slate-500">Tap to record audio</span>
+        </div>
+        <div class="text-xs text-slate-600 mt-2">or
+          <label class="text-teal-400 cursor-pointer underline">upload a file<input type="file" accept="audio/*" class="hidden" onchange="onAudioPick(event)"/></label>
+        </div>
+        <audio id="audio-preview" class="hidden mt-3 w-full" controls></audio>`;
+    } else if (mode === 'LOCATION') {
+      c.innerHTML = `
+        <button onclick="captureLocation()" class="btn-outline text-sm py-2 px-4">📍 Capture current location</button>
+        <div id="loc-preview" class="text-sm text-slate-300 mt-3"></div>`;
+    } else if (mode === 'SURVEY') {
+      c.innerHTML = `
+        <textarea id="survey-text" oninput="onSurvey()" rows="3" placeholder="Describe your answer…" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-teal-500"></textarea>
+        <div class="text-xs text-slate-500 mt-3 mb-1">Confidence (1–5)</div>
+        <div class="flex gap-2" id="rating-row">
+          ${[1,2,3,4,5].map(n => `<button onclick="setRating(${n})" data-n="${n}" class="rating-chip filter-btn">${n}</button>`).join('')}
+        </div>`;
+    } else {
+      const opts = ['Positive','Neutral','Negative','Mixed'];
+      c.innerHTML = `
+        <div class="text-xs text-slate-500 mb-2">Choose the best label</div>
+        <div class="flex flex-wrap gap-2" id="label-row">
+          ${opts.map(o => `<button onclick="setLabel('${o}')" data-o="${o}" class="label-chip filter-btn">${o}</button>`).join('')}
+        </div>`;
+    }
+  }
+
+  function onPhotoPick(e) {
+    const f = e.target.files[0];
+    if (!f) return;
+    collected.file = f;
+    const img = document.getElementById('photo-preview');
+    img.src = URL.createObjectURL(f);
+    img.classList.remove('hidden');
+    setStatus('Photo ready ✓', 'text-green-400');
+  }
+
+  function onAudioPick(e) {
+    const f = e.target.files[0];
+    if (!f) return;
+    collected.file = f;
+    const a = document.getElementById('audio-preview');
+    a.src = URL.createObjectURL(f);
+    a.classList.remove('hidden');
+    setStatus('Audio ready ✓', 'text-green-400');
+  }
+
+  async function toggleRecord() {
+    const btn = document.getElementById('rec-btn');
+    const label = document.getElementById('rec-label');
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      mediaRecorder.stop();
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunks = [];
+      mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.ondataavailable = ev => audioChunks.push(ev.data);
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(audioChunks, { type: 'audio/webm' });
+        collected.file = new File([blob], `recording-${Date.now()}.webm`, { type: 'audio/webm' });
+        const a = document.getElementById('audio-preview');
+        a.src = URL.createObjectURL(blob);
+        a.classList.remove('hidden');
+        stream.getTracks().forEach(t => t.stop());
+        btn.textContent = '⏺ Record';
+        label.textContent = 'Recording captured ✓';
+        setStatus('Audio ready ✓', 'text-green-400');
+      };
+      mediaRecorder.start();
+      btn.textContent = '⏹ Stop';
+      label.textContent = '🔴 Recording…';
+    } catch (err) {
+      setStatus('Microphone blocked — use file upload instead', 'text-amber-400');
+    }
+  }
+
+  function captureLocation() {
+    setStatus('Locating…');
+    if (!navigator.geolocation) { setStatus('Geolocation not supported', 'text-amber-400'); return; }
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        collected.payload = { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: Math.round(pos.coords.accuracy) };
+        document.getElementById('loc-preview').textContent = `📍 ${collected.payload.lat.toFixed(5)}, ${collected.payload.lng.toFixed(5)} (±${collected.payload.accuracy}m)`;
+        setStatus('Location captured ✓', 'text-green-400');
+      },
+      () => setStatus('Location permission denied', 'text-amber-400')
+    );
+  }
+
+  function onSurvey() {
+    const text = document.getElementById('survey-text').value.trim();
+    collected.payload = { ...(collected.payload || {}), response: text };
+  }
+  function setRating(n) {
+    collected.payload = { ...(collected.payload || {}), rating: n };
+    document.querySelectorAll('.rating-chip').forEach(b => b.classList.toggle('active', +b.dataset.n === n));
+  }
+  function setLabel(o) {
+    collected.payload = { label: o };
+    document.querySelectorAll('.label-chip').forEach(b => b.classList.toggle('active', b.dataset.o === o));
+  }
+
+  async function submitQuest(id) {
+    const q = modalQuest;
+    const mode = modeFor(q.category);
+    // validate
+    if ((mode === 'PHOTO' || mode === 'AUDIO') && !collected.file) { setStatus('Please add a file first', 'text-amber-400'); return; }
+    if (mode === 'LOCATION' && !collected.payload) { setStatus('Capture your location first', 'text-amber-400'); return; }
+    if (mode === 'SURVEY' && !(collected.payload && collected.payload.response)) { setStatus('Please enter a response', 'text-amber-400'); return; }
+    if (mode === 'LABEL' && !(collected.payload && collected.payload.label)) { setStatus('Please choose a label', 'text-amber-400'); return; }
+
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true; btn.textContent = 'Submitting…';
+    try {
+      const form = new FormData();
+      form.append('contributorId', '1');
+      form.append('questId', String(id));
+      form.append('type', mode);
+      if (collected.file) form.append('file', collected.file);
+      if (collected.payload) form.append('payload', JSON.stringify(collected.payload));
+      const res = await fetch('/api/submissions', { method: 'POST', body: form });
+      if (!res.ok) throw new Error('Submission failed (' + res.status + ')');
+      const sub = await res.json();
+      setStatus(`✓ Accepted! Quality ${sub.qualityScore}/100 — you earned $${sub.reward.toFixed(2)}`, 'text-green-400');
+      btn.textContent = 'Submitted ✓';
+      // refresh quest list to show updated progress
+      const data = await api_getQuests();
+      allQuests = data;
+      setTimeout(() => { closeModal(); filterQuests(); }, 1600);
+    } catch (e) {
+      setStatus(e.message, 'text-red-400');
+      btn.disabled = false; btn.textContent = `Submit & Earn $${q.reward.toFixed(2)}`;
+    }
+  }
+
+  function api_getQuests() {
+    return fetch('/api/quests').then(r => r.json());
   }
 
   function closeModal() {

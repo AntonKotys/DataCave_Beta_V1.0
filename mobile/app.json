@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "DataCave",
+    "slug": "datacave",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0a0e1a",
+    "splash": {
+      "backgroundColor": "#0a0e1a",
+      "resizeMode": "contain",
+      "image": "./assets/splash-icon.png"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.datacave.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "DataCave uses your camera to complete image-collection quests, like photographing store shelves.",
+        "NSMicrophoneUsageDescription": "DataCave uses your microphone to complete audio quests, like recording ambient sounds or speech.",
+        "NSLocationWhenInUseUsageDescription": "DataCave uses your location for location-based quests, like mapping pedestrian paths. You are always in control of what you share."
+      }
+    },
+    "android": {
+      "package": "com.datacave.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0a0e1a",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "ACCESS_FINE_LOCATION"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-audio"
+    ]
+  }
+}

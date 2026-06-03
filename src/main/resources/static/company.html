@@ -87,15 +87,15 @@
         <div class="grid md:grid-cols-2 gap-5">
           <div class="md:col-span-2">
             <label class="form-label">Quest Title *</label>
-            <input type="text" class="form-input" placeholder="e.g. Street noise recordings – downtown areas"/>
+            <input id="qf-title" type="text" class="form-input" placeholder="e.g. Street noise recordings – downtown areas"/>
           </div>
           <div class="md:col-span-2">
             <label class="form-label">Description *</label>
-            <textarea class="form-input" rows="3" placeholder="Describe exactly what contributors need to do, format requirements, quality criteria..."></textarea>
+            <textarea id="qf-desc" class="form-input" rows="3" placeholder="Describe exactly what contributors need to do, format requirements, quality criteria..."></textarea>
           </div>
           <div>
             <label class="form-label">Data Category *</label>
-            <select class="form-input">
+            <select id="qf-cat" class="form-input">
               <option>Audio</option>
               <option>Image</option>
               <option>Text & Label</option>
@@ -107,7 +107,7 @@
           </div>
           <div>
             <label class="form-label">Difficulty</label>
-            <select class="form-input">
+            <select id="qf-diff" class="form-input">
               <option>Easy</option>
               <option>Medium</option>
               <option>Hard</option>
@@ -115,19 +115,19 @@
           </div>
           <div>
             <label class="form-label">Reward per submission (USD) *</label>
-            <input type="number" class="form-input" placeholder="2.50" step="0.50" min="0.50"/>
+            <input id="qf-reward" type="number" class="form-input" placeholder="2.50" step="0.50" min="0.50" oninput="updateEstimator()"/>
           </div>
           <div>
             <label class="form-label">Number of submissions needed *</label>
-            <input type="number" class="form-input" placeholder="500" min="10"/>
+            <input id="qf-count" type="number" class="form-input" placeholder="500" min="10" oninput="updateEstimator()"/>
           </div>
           <div>
             <label class="form-label">Deadline</label>
-            <input type="date" class="form-input"/>
+            <input id="qf-deadline" type="date" class="form-input"/>
           </div>
           <div>
             <label class="form-label">Estimated time per submission</label>
-            <select class="form-input">
+            <select id="qf-time" class="form-input">
               <option>Under 5 minutes</option>
               <option>5–15 minutes</option>
               <option>15–30 minutes</option>
@@ -141,7 +141,7 @@
           </div>
           <div class="md:col-span-2">
             <label class="form-label">Tags (comma-separated)</label>
-            <input type="text" class="form-input" placeholder="audio, urban, ambient"/>
+            <input id="qf-tags" type="text" class="form-input" placeholder="audio, urban, ambient"/>
           </div>
         </div>
 
@@ -176,15 +176,15 @@
         <div class="grid grid-cols-3 gap-4 text-center">
           <div class="bg-slate-800 rounded-xl p-4">
             <div class="text-xs text-slate-500 mb-1">Reward per submission</div>
-            <div class="text-lg font-bold text-teal-400">$2.50</div>
+            <div id="est-reward" class="text-lg font-bold text-teal-400">$2.50</div>
           </div>
           <div class="bg-slate-800 rounded-xl p-4">
-            <div class="text-xs text-slate-500 mb-1">500 submissions</div>
-            <div class="text-lg font-bold">$1,250</div>
+            <div id="est-count-label" class="text-xs text-slate-500 mb-1">500 submissions</div>
+            <div id="est-subtotal" class="text-lg font-bold">$1,250</div>
           </div>
           <div class="bg-slate-800 rounded-xl p-4">
             <div class="text-xs text-slate-500 mb-1">Total with fee</div>
-            <div class="text-lg font-bold text-amber-400">$1,437</div>
+            <div id="est-total" class="text-lg font-bold text-amber-400">$1,437</div>
           </div>
         </div>
       </div>
@@ -259,10 +259,64 @@
     el.classList.add('active');
   }
 
-  function submitQuest() {
-    const toast = document.getElementById('toast');
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 3500);
+  const TIME_MAP = { 'Under 5 minutes': 4, '5–15 minutes': 10, '15–30 minutes': 22, '30+ minutes': 40, 'Passive / background': 0 };
+
+  function updateEstimator() {
+    const reward = parseFloat(document.getElementById('qf-reward').value) || 2.50;
+    const count = parseInt(document.getElementById('qf-count').value) || 500;
+    const subtotal = reward * count;
+    const total = subtotal * 1.15;
+    document.getElementById('est-reward').textContent = '$' + reward.toFixed(2);
+    document.getElementById('est-count-label').textContent = count.toLocaleString() + ' submissions';
+    document.getElementById('est-subtotal').textContent = '$' + subtotal.toLocaleString(undefined, { maximumFractionDigits: 0 });
+    document.getElementById('est-total').textContent = '$' + total.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  }
+
+  async function submitQuest() {
+    const title = document.getElementById('qf-title').value.trim();
+    const reward = parseFloat(document.getElementById('qf-reward').value);
+    const count = parseInt(document.getElementById('qf-count').value);
+    if (!title) { alert('Please enter a quest title.'); return; }
+    if (!reward || reward <= 0) { alert('Please enter a reward per submission.'); return; }
+    if (!count || count < 10) { alert('Please enter the number of submissions needed (min 10).'); return; }
+
+    const deadlineRaw = document.getElementById('qf-deadline').value;
+    const deadline = deadlineRaw
+      ? new Date(deadlineRaw).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      : 'Open';
+    const tags = document.getElementById('qf-tags').value.split(',').map(t => t.trim()).filter(Boolean);
+
+    const body = {
+      title,
+      description: document.getElementById('qf-desc').value.trim(),
+      category: document.getElementById('qf-cat').value,
+      difficulty: document.getElementById('qf-diff').value,
+      reward,
+      requiredCount: count,
+      deadline,
+      estimatedMinutes: TIME_MAP[document.getElementById('qf-time').value] ?? 0,
+      company: 'HealthAI Research',
+      tags,
+    };
+
+    try {
+      const res = await fetch('/api/quests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error('Failed (' + res.status + ')');
+      const q = await res.json();
+      const toast = document.getElementById('toast');
+      toast.querySelector('.font-semibold').textContent = `Quest published! (#${q.id})`;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3500);
+      // clear key fields
+      ['qf-title', 'qf-desc', 'qf-reward', 'qf-count', 'qf-tags'].forEach(id => document.getElementById(id).value = '');
+      updateEstimator();
+    } catch (e) {
+      alert('Could not publish quest: ' + e.message);
+    }
   }
 
   // Load datasets
