@@ -32,4 +32,9 @@ public class Contributor {
     private int baseCompleted;
     private List<Badge> badges;
     private List<EarningsEntry> seededEarnings;
+
+    // --- expert tier (B) ----------------------------------------------------
+    private boolean expertVerified;        // passed credential verification
+    private List<String> expertDomains;    // verified domains, e.g. ["fashion", "surgical"]
+    private String expertStatus;           // null, "PENDING", "VERIFIED", "REJECTED"
 }

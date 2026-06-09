@@ -34,6 +34,11 @@ function resolveHost() {
 
 export const API_BASE = `http://${resolveHost()}:${PORT}`;
 
+// DEMO TOGGLE: when true, the backend auto-rejects every submission so you can
+// test the rejection / quality-gate flow without a real API key. Set to false
+// to restore normal accept/reject behaviour.
+const FORCE_REJECT = false;
+
 async function get(path) {
   const res = await fetch(`${API_BASE}${path}`);
   if (!res.ok) throw new Error(`Request failed: ${res.status}`);
@@ -60,6 +65,24 @@ export const api = {
   acceptQuest: (questId, contributorId = CONTRIBUTOR_ID) =>
     post(`/api/quests/${questId}/accept?contributorId=${contributorId}`),
 
+  getProfile: (id = CONTRIBUTOR_ID) => get(`/api/contributor/${id}`),
+
+  /** AI pre-labeling: send a photo, get back structured labels for human validation. */
+  analyzeLabels: async ({ questId, file }) => {
+    const form = new FormData();
+    form.append('questId', String(questId));
+    form.append('file', {
+      uri: file.uri,
+      name: file.name || `photo-${Date.now()}.jpg`,
+      type: file.mimeType || 'image/jpeg',
+    });
+    const res = await fetch(`${API_BASE}/api/labeling/analyze`, {
+      method: 'POST', body: form, headers: { Accept: 'application/json' },
+    });
+    if (!res.ok) throw new Error(`Analyze failed: ${res.status}`);
+    return res.json();
+  },
+
   /**
    * Submit data toward a quest.
    * @param {object} opts
@@ -68,12 +91,16 @@ export const api = {
    * @param {object} [opts.file]      { uri, name, mimeType } for photo/audio
    * @param {object} [opts.payload]   survey answers / coordinates / labels
    */
-  submit: async ({ questId, type, file, payload, contributorId = CONTRIBUTOR_ID }) => {
+  submit: async ({ questId, type, file, payload, labels, aiLabels, humanValidated, labelSource, contributorId = CONTRIBUTOR_ID }) => {
     const form = new FormData();
     form.append('contributorId', String(contributorId));
     form.append('questId', String(questId));
     if (type) form.append('type', type);
     if (payload) form.append('payload', JSON.stringify(payload));
+    if (labels) { form.append('labels', JSON.stringify(labels)); form.append('humanValidated', String(humanValidated ?? true)); }
+    if (aiLabels) form.append('aiLabels', JSON.stringify(aiLabels));
+    if (labelSource) form.append('labelSource', labelSource);
+    if (FORCE_REJECT) form.append('simulateReject', 'true');
     if (file?.uri) {
       form.append('file', {
         uri: file.uri,

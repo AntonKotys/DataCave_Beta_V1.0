@@ -23,4 +23,17 @@ public class QuestRequest {
     private String company;
     private Integer estimatedMinutes;
     private List<String> tags;
+
+    // --- labeling requirements -------------------------------------------
+    /** Attach an existing schema from the library by ID. */
+    private Long schemaId;
+
+    /**
+     * Define custom label fields inline. If provided (and schemaId is null),
+     * a new AnnotationSchema is auto-created and attached to the quest.
+     */
+    private List<SchemaField> customLabels;
+
+    /** Name for the auto-created schema. Defaults to "{title} Labels". */
+    private String schemaName;
 }

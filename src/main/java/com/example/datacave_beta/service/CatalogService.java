@@ -1,5 +1,6 @@
 package com.example.datacave_beta.service;
 
+import com.example.datacave_beta.model.AnnotationSchema;
 import com.example.datacave_beta.model.Dataset;
 import com.example.datacave_beta.model.Quest;
 import com.example.datacave_beta.model.QuestRequest;
@@ -39,9 +40,42 @@ public class CatalogService {
         double reward = input.getReward() != null && input.getReward() > 0 ? input.getReward() : 1.0;
         int required = input.getRequiredCount() != null && input.getRequiredCount() > 0 ? input.getRequiredCount() : 100;
         int minutes = input.getEstimatedMinutes() != null ? input.getEstimatedMinutes() : 0;
+        String title = orDefault(input.getTitle(), "Untitled Quest");
+
+        // --- resolve labeling schema ----------------------------------------
+        Long schemaId = input.getSchemaId();
+
+        // If custom labels are defined, auto-create a schema for this quest.
+        if (schemaId == null
+                && input.getCustomLabels() != null
+                && !input.getCustomLabels().isEmpty()) {
+            String schemaName = orDefault(input.getSchemaName(), title + " Labels");
+            long sid = store.nextSchemaId();
+            AnnotationSchema schema = AnnotationSchema.builder()
+                    .id(sid)
+                    .name(schemaName)
+                    .vertical(orDefault(input.getCategory(), "Custom"))
+                    .description("Custom labeling schema for quest: " + title)
+                    .version("1.0")
+                    .rating(0)
+                    .usageCount(1)
+                    .fields(input.getCustomLabels())
+                    .build();
+            store.putSchema(schema);
+            schemaId = sid;
+        } else if (schemaId != null) {
+            // Increment usage counter on an existing schema.
+            AnnotationSchema existing = store.schema(schemaId);
+            if (existing != null) {
+                existing.setUsageCount(existing.getUsageCount() + 1);
+                store.touch();
+            }
+        }
+        // --------------------------------------------------------------------
+
         Quest q = Quest.builder()
                 .id(id)
-                .title(orDefault(input.getTitle(), "Untitled Quest"))
+                .title(title)
                 .description(orDefault(input.getDescription(), ""))
                 .category(orDefault(input.getCategory(), "Text & Label"))
                 .categoryIcon(iconFor(input.getCategory()))
@@ -54,6 +88,7 @@ public class CatalogService {
                 .tags(input.getTags() != null ? input.getTags() : List.of())
                 .status("OPEN")
                 .estimatedMinutes(minutes)
+                .schemaId(schemaId)
                 .build();
         store.putQuest(q);
         return q;

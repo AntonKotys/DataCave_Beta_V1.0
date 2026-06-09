@@ -27,4 +27,9 @@ public class Dataset {
     private int contributorCount;
     private String lastUpdated;
     private List<String> tags;
+
+    // --- freshness (G) ------------------------------------------------------
+    private long collectedAt;     // epoch millis of last refresh
+    private int domainDecayDays;  // how many days until this domain's data is "stale"
+                                  // (fashion ~30, marketing ~90, audio ~365, medical ~720)
 }

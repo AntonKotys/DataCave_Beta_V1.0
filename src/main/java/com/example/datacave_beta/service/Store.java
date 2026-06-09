@@ -30,11 +30,15 @@ public class Store {
     private final Map<Long, Contributor> contributors = new ConcurrentHashMap<>();
     private final Map<Long, Acceptance> acceptances = new ConcurrentHashMap<>();
     private final Map<Long, Submission> submissions = new ConcurrentHashMap<>();
+    private final Map<Long, AnnotationSchema> schemas = new ConcurrentHashMap<>();
+    private final Map<Long, StandingQuest> standingQuests = new ConcurrentHashMap<>();
 
     private final AtomicLong questSeq = new AtomicLong(100);
     private final AtomicLong datasetSeq = new AtomicLong(100);
     private final AtomicLong acceptanceSeq = new AtomicLong(1);
     private final AtomicLong submissionSeq = new AtomicLong(1);
+    private final AtomicLong schemaSeq = new AtomicLong(100);
+    private final AtomicLong standingSeq = new AtomicLong(100);
 
     private final ObjectMapper mapper = new ObjectMapper();
 
@@ -56,18 +60,28 @@ public class Store {
     public Collection<Dataset> datasets() { return datasets.values(); }
     public Dataset dataset(Long id) { return datasets.get(id); }
     public Contributor contributor(Long id) { return contributors.get(id); }
+    public Collection<Contributor> contributors() { return contributors.values(); }
     public Collection<Acceptance> acceptances() { return acceptances.values(); }
     public Collection<Submission> submissions() { return submissions.values(); }
+    public Collection<AnnotationSchema> schemas() { return schemas.values(); }
+    public AnnotationSchema schema(Long id) { return schemas.get(id); }
+    public Collection<StandingQuest> standingQuests() { return standingQuests.values(); }
+    public StandingQuest standingQuest(Long id) { return standingQuests.get(id); }
 
     public long nextQuestId() { return questSeq.incrementAndGet(); }
     public long nextDatasetId() { return datasetSeq.incrementAndGet(); }
     public long nextAcceptanceId() { return acceptanceSeq.incrementAndGet(); }
     public long nextSubmissionId() { return submissionSeq.incrementAndGet(); }
+    public long nextSchemaId() { return schemaSeq.incrementAndGet(); }
+    public long nextStandingId() { return standingSeq.incrementAndGet(); }
 
     public void putQuest(Quest q) { quests.put(q.getId(), q); save(); }
     public void putDataset(Dataset d) { datasets.put(d.getId(), d); save(); }
+    public void putContributor(Contributor c) { contributors.put(c.getId(), c); save(); }
     public void putAcceptance(Acceptance a) { acceptances.put(a.getId(), a); save(); }
     public void putSubmission(Submission s) { submissions.put(s.getId(), s); save(); }
+    public void putSchema(AnnotationSchema s) { schemas.put(s.getId(), s); save(); }
+    public void putStandingQuest(StandingQuest s) { standingQuests.put(s.getId(), s); save(); }
     public void touch() { save(); }
 
     // --- persistence ---------------------------------------------------------
@@ -99,10 +113,14 @@ public class Store {
             snap.contributors.forEach(c -> contributors.put(c.getId(), c));
             snap.acceptances.forEach(a -> acceptances.put(a.getId(), a));
             snap.submissions.forEach(s -> submissions.put(s.getId(), s));
+            if (snap.schemas != null) snap.schemas.forEach(s -> schemas.put(s.getId(), s));
+            if (snap.standingQuests != null) snap.standingQuests.forEach(s -> standingQuests.put(s.getId(), s));
             questSeq.set(Math.max(questSeq.get(), maxId(quests.keySet())));
             datasetSeq.set(Math.max(datasetSeq.get(), maxId(datasets.keySet())));
             acceptanceSeq.set(Math.max(acceptanceSeq.get(), maxId(acceptances.keySet())));
             submissionSeq.set(Math.max(submissionSeq.get(), maxId(submissions.keySet())));
+            schemaSeq.set(Math.max(schemaSeq.get(), maxId(schemas.keySet())));
+            standingSeq.set(Math.max(standingSeq.get(), maxId(standingQuests.keySet())));
             log.info("Loaded DataCave state: {} quests, {} submissions, {} acceptances",
                     quests.size(), submissions.size(), acceptances.size());
             return !quests.isEmpty();
@@ -125,6 +143,8 @@ public class Store {
             snap.contributors = new ArrayList<>(contributors.values());
             snap.acceptances = new ArrayList<>(acceptances.values());
             snap.submissions = new ArrayList<>(submissions.values());
+            snap.schemas = new ArrayList<>(schemas.values());
+            snap.standingQuests = new ArrayList<>(standingQuests.values());
             mapper.writerWithDefaultPrettyPrinter().writeValue(stateFile().toFile(), snap);
         } catch (Exception e) {
             log.warn("Could not persist state: {}", e.getMessage());
@@ -138,6 +158,8 @@ public class Store {
         public List<Contributor> contributors = new ArrayList<>();
         public List<Acceptance> acceptances = new ArrayList<>();
         public List<Submission> submissions = new ArrayList<>();
+        public List<AnnotationSchema> schemas = new ArrayList<>();
+        public List<StandingQuest> standingQuests = new ArrayList<>();
     }
 
     // --- seed ----------------------------------------------------------------
@@ -190,6 +212,101 @@ public class Store {
             acceptances.put(id, Acceptance.builder().id(id).contributorId(1L).questId(qid)
                     .status("ACTIVE").acceptedAt(now).build());
         }
-        log.info("Seeded DataCave demo data.");
+
+        // --- Freshness (G): set collection date + domain decay per dataset -----
+        long day = 24L * 3600 * 1000;
+        setFreshness(1L, now - 40 * day, 365);   // urban audio — slow decay, ~40d old
+        setFreshness(2L, now - 12 * day, 90);     // retail images — 12d old
+        setFreshness(3L, now - 70 * day, 365);    // dialect speech — 70d old
+        setFreshness(4L, now - 25 * day, 365);    // sleep survey — 25d old
+
+        // --- Annotation schema library (N) -------------------------------------
+        seedSchema("Fashion Garment Attributes", "Fashion", "Rich garment metadata for style/recommendation models.", "1.2", 96, List.of(
+            field("garment_type", "single-choice", "Primary garment category", List.of("Dress", "Top", "Trousers", "Skirt", "Outerwear", "Footwear", "Accessory"), true),
+            field("primary_color", "text", "Dominant color", null, true),
+            field("pattern", "single-choice", "Surface pattern", List.of("Solid", "Striped", "Floral", "Checked", "Graphic", "Other"), true),
+            field("style_aesthetic", "single-choice", "Overall aesthetic", List.of("Casual", "Smart casual", "Formal", "Streetwear", "Athleisure", "Bohemian"), true),
+            field("occasion", "multi-choice", "Suitable occasions", List.of("Work", "Everyday", "Evening", "Sport", "Special event"), false),
+            field("trend_score", "number", "Current trend relevance (1-10)", null, false)
+        ));
+        seedSchema("Surgical Instrument Annotation", "Surgical", "Pixel-precise instrument labels for surgical perception models. Expert-only.", "2.0", 99, List.of(
+            field("instrument_type", "single-choice", "Instrument visible", List.of("Grasper", "Scissors", "Clip applier", "Hook", "Needle driver", "Irrigator", "Specimen bag"), true),
+            field("bounding_box", "text", "Box convention: enclose FULL shaft + tip", null, true),
+            field("tissue_contact", "boolean", "Is the instrument in contact with tissue?", null, true),
+            field("occlusion", "single-choice", "Visibility of the instrument", List.of("Full", "Partial", "Heavily occluded"), true)
+        ));
+        seedSchema("Ad Creative Reaction", "Marketing", "Genuine consumer reaction signals to a creative asset (not expert opinion).", "1.0", 90, List.of(
+            field("emotional_response", "single-choice", "Your gut emotional reaction", List.of("Love it", "Like it", "Neutral", "Dislike it", "Hate it"), true),
+            field("authenticity", "number", "How authentic does it feel? (1-5)", null, true),
+            field("purchase_intent", "single-choice", "Would this make you consider buying?", List.of("Definitely", "Maybe", "No"), true),
+            field("first_word", "text", "First word that comes to mind", null, false)
+        ));
+        seedSchema("Sentiment & Emotion", "NLP", "Standard text/clip sentiment classification with confidence.", "1.1", 93, List.of(
+            field("label", "single-choice", "Overall sentiment", List.of("Positive", "Neutral", "Negative", "Mixed"), true),
+            field("confidence", "number", "Your confidence (1-5)", null, true)
+        ));
+        seedSchema("Handwriting Sample Analysis", "OCR", "Labels for handwriting digitization quests — used by handwriting recognition and OCR models.", "1.0", 95, List.of(
+            field("writing_style", "single-choice", "Overall handwriting style", List.of("Print", "Cursive", "Mixed", "Block capitals"), true),
+            field("legibility", "single-choice", "How clearly machine-readable is the text?", List.of("Excellent", "Good", "Fair", "Poor"), true),
+            field("language", "text", "Language of the handwritten text (e.g. English, Georgian, German)", null, true),
+            field("ink_color", "single-choice", "Ink or pen color", List.of("Black", "Blue", "Red", "Green", "Pencil", "Other"), true),
+            field("paper_type", "single-choice", "Background / paper type", List.of("Lined", "Blank", "Graph", "Other"), true),
+            field("slant", "single-choice", "Direction of letter slant", List.of("Left", "Upright", "Right"), false),
+            field("text_content", "text", "Transcribe the handwritten text exactly as written", null, true)
+        ));
+
+        // --- Demand-side flags on quests ---------------------------------------
+        // Expert-only specialist quests (B)
+        tagQuest(6L, "Verified Expert", true, "medical", null);
+        tagQuest(9L, "Verified Expert", true, "medical", null);
+        // Tier-gated + schema-attached quests (B + N)
+        tagQuest(4L, "Silver Mapper", false, null, null);
+        tagQuest(2L, null, false, "fashion", 101L);   // shelf/fashion images -> Fashion schema
+        tagQuest(3L, null, false, null, 104L);          // emotion labeling -> Sentiment schema
+        tagQuest(10L, null, false, null, 104L);         // sentiment tagging -> Sentiment schema
+        tagQuest(8L, null, false, null, 104L);          // traffic classification -> Sentiment-style schema
+        tagQuest(7L, null, false, null, 105L);          // handwriting samples -> Handwriting schema
+
+        // --- Standing quest / subscription (E) ---------------------------------
+        long sid = nextStandingId();
+        standingQuests.put(sid, StandingQuest.builder()
+            .id(sid).title("Weekly Fashion Trend Imagery").company("Atman (Fashion AI)")
+            .category("Image").description("Fresh, expert-labeled trend imagery delivered every week so the trend model never goes stale.")
+            .rewardPerSubmission(3.50).batchSize(150).frequency("WEEKLY").schemaId(101L)
+            .status("ACTIVE").createdAt(now - 21 * day).nextDeliveryAt(now + 2 * day)
+            .deliveriesCompleted(3)
+            .deliveries(new java.util.ArrayList<>(List.of(
+                Delivery.builder().batchNumber(1).deliveredAt(now - 21 * day).sampleCount(150).freshnessScore(40).note("Initial batch").build(),
+                Delivery.builder().batchNumber(2).deliveredAt(now - 14 * day).sampleCount(150).freshnessScore(60).note("Weekly refresh").build(),
+                Delivery.builder().batchNumber(3).deliveredAt(now - 7 * day).sampleCount(150).freshnessScore(85).note("Weekly refresh").build()
+            )))
+            .build());
+
+        log.info("Seeded DataCave demo data ({} schemas, {} standing quests).", schemas.size(), standingQuests.size());
+    }
+
+    private void setFreshness(long datasetId, long collectedAt, int decayDays) {
+        Dataset d = datasets.get(datasetId);
+        if (d != null) { d.setCollectedAt(collectedAt); d.setDomainDecayDays(decayDays); }
+    }
+
+    private void tagQuest(long questId, String requiredTier, boolean expertOnly, String domain, Long schemaId) {
+        Quest q = quests.get(questId);
+        if (q == null) return;
+        q.setRequiredTier(requiredTier);
+        q.setExpertOnly(expertOnly);
+        q.setDomain(domain);
+        q.setSchemaId(schemaId);
+    }
+
+    private SchemaField field(String name, String type, String desc, List<String> options, boolean required) {
+        return SchemaField.builder().name(name).type(type).description(desc).options(options).required(required).build();
+    }
+
+    private void seedSchema(String name, String vertical, String desc, String version, int rating, List<SchemaField> fields) {
+        long id = nextSchemaId();
+        schemas.put(id, AnnotationSchema.builder()
+            .id(id).name(name).vertical(vertical).description(desc).version(version)
+            .rating(rating).usageCount(0).fields(fields).build());
     }
 }

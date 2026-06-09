@@ -34,6 +34,13 @@ export default function SubmitScreen({ route, navigation }) {
 
   // PHOTO
   const [photo, setPhoto] = useState(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [aiLabels, setAiLabels] = useState(null);   // original AI labels
+  const [labels, setLabels] = useState(null);        // editable copy
+  const [labelSource, setLabelSource] = useState(null);
+  const [labelSchema, setLabelSchema] = useState(null);
+  const [schemaFields, setSchemaFields] = useState(null); // field definitions (type/options/desc)
+  const [relevance, setRelevance] = useState(null);       // { score, note }
   // AUDIO
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const [recording, setRecording] = useState(false);
@@ -65,11 +72,54 @@ export default function SubmitScreen({ route, navigation }) {
         : await ImagePicker.launchCameraAsync({ quality: 0.7 });
       if (!res.canceled && res.assets?.length) {
         const a = res.assets[0];
-        setPhoto({ uri: a.uri, name: a.fileName || `photo-${Date.now()}.jpg`, mimeType: a.mimeType || 'image/jpeg' });
+        const file = { uri: a.uri, name: a.fileName || `photo-${Date.now()}.jpg`, mimeType: a.mimeType || 'image/jpeg' };
+        setPhoto(file);
+        analyzePhoto(file);
       }
     } catch (e) {
       Alert.alert('Camera error', e.message);
     }
+  };
+
+  // AI pre-labeling: analyze the photo and pre-fill labels for human validation.
+  const analyzePhoto = async (file) => {
+    setAnalyzing(true);
+    setAiLabels(null); setLabels(null); setRelevance(null);
+    try {
+      const result = await api.analyzeLabels({ questId: quest.id, file });
+      setAiLabels(result.labels);
+      setLabels({ ...result.labels });
+      setLabelSource(result.source);
+      setLabelSchema(result.schema);
+      setSchemaFields(result.schemaFields || null);
+      if (result.relevanceScore != null) {
+        setRelevance({ score: result.relevanceScore, note: result.relevanceNote });
+      }
+    } catch (e) {
+      // labeling is optional — submission still works without it
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  // Field definition lookup by name.
+  const fieldDef = (key) => (schemaFields || []).find((f) => f.name === key) || null;
+
+  const setLabelValue = (key, value) => setLabels((prev) => ({ ...prev, [key]: value }));
+
+  const toggleMultiLabel = (key, option) => {
+    setLabels((prev) => {
+      const cur = Array.isArray(prev[key]) ? prev[key] : (prev[key] ? [prev[key]] : []);
+      const next = cur.includes(option) ? cur.filter((x) => x !== option) : [...cur, option];
+      return { ...prev, [key]: next };
+    });
+  };
+
+  const editTextLabel = (key, text) => {
+    const original = aiLabels ? aiLabels[key] : undefined;
+    let v = text;
+    if (typeof original === 'number') { const n = Number(text); if (!isNaN(n)) v = n; }
+    setLabelValue(key, v);
   };
 
   // ---- AUDIO ----
@@ -132,16 +182,26 @@ export default function SubmitScreen({ route, navigation }) {
     try {
       setSubmitting(true);
       let opts = { questId: quest.id, type: mode };
-      if (mode === 'PHOTO') opts.file = photo;
+      if (mode === 'PHOTO') {
+        opts.file = photo;
+        if (labels) { opts.labels = labels; opts.aiLabels = aiLabels; opts.humanValidated = true; opts.labelSource = labelSource; }
+      }
       else if (mode === 'AUDIO') opts.file = { uri: audioUri, name: `recording-${Date.now()}.m4a`, mimeType: 'audio/m4a' };
       else if (mode === 'LOCATION') opts.payload = coords;
       else if (mode === 'SURVEY') opts.payload = { response: response.trim(), rating };
       else if (mode === 'LABEL') opts.payload = { label };
 
       const result = await api.submit(opts);
+      if (result.status === 'REJECTED') {
+        Alert.alert(
+          'Submission rejected ✗',
+          `${result.relevanceNote || 'This submission did not match the quest requirements.'}\n\nRelevance score: ${result.relevanceScore}/100. No reward credited — please submit data that matches the quest.`,
+        );
+        return;
+      }
       Alert.alert(
         'Submitted! 🎉',
-        `Your ${mode.toLowerCase()} was accepted (quality ${result.qualityScore}/100). You earned $${result.reward.toFixed(2)}.`,
+        `Your ${mode.toLowerCase()} was accepted (quality ${result.qualityScore}/100${result.relevanceScore != null ? `, relevance ${result.relevanceScore}/100` : ''}). You earned $${result.reward.toFixed(2)}.`,
         [{ text: 'Done', onPress: () => navigation.navigate('Dashboard') }]
       );
     } catch (e) {
@@ -149,6 +209,70 @@ export default function SubmitScreen({ route, navigation }) {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // Render the correct control for a label field based on its schema type.
+  const renderLabelField = (key) => {
+    const def = fieldDef(key);
+    const type = def ? def.type : 'text';
+    const opts = def ? (def.options || []) : [];
+    const desc = def ? def.description : '';
+    const req = def ? def.required : false;
+    const value = labels[key];
+
+    return (
+      <View key={key} style={{ marginBottom: 14 }}>
+        <Text style={styles.fieldName}>{key.replace(/_/g, ' ')}{req ? ' *' : ''}</Text>
+        {desc ? <Text style={styles.fieldDesc}>{desc}</Text> : null}
+
+        {type === 'single-choice' && (
+          <View style={styles.wrap}>
+            {opts.map((o) => (
+              <TouchableOpacity key={o} style={[styles.optChip, value === o && styles.chipActive]} onPress={() => setLabelValue(key, o)}>
+                <Text style={[styles.chipText, value === o && styles.chipTextActive]}>{o}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {type === 'multi-choice' && (
+          <View style={styles.wrap}>
+            {opts.map((o) => {
+              const sel = Array.isArray(value) ? value.includes(o) : value === o;
+              return (
+                <TouchableOpacity key={o} style={[styles.optChip, sel && styles.chipActive]} onPress={() => toggleMultiLabel(key, o)}>
+                  <Text style={[styles.chipText, sel && styles.chipTextActive]}>{sel ? '✓ ' : ''}{o}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+
+        {type === 'boolean' && (
+          <View style={styles.row}>
+            <TouchableOpacity style={[styles.boolBtn, (value === true || value === 'true') && styles.boolYes]} onPress={() => setLabelValue(key, true)}>
+              <Text style={[styles.chipText, (value === true || value === 'true') && { color: colors.teal }]}>Yes</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.boolBtn, (value === false || value === 'false') && styles.boolNo]} onPress={() => setLabelValue(key, false)}>
+              <Text style={[styles.chipText, (value === false || value === 'false') && { color: colors.red }]}>No</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {type === 'number' && (
+          <TextInput style={styles.lInput} keyboardType="numeric" placeholder={desc}
+            placeholderTextColor={colors.textFainter}
+            value={value != null ? String(value) : ''} onChangeText={(t) => editTextLabel(key, t)} />
+        )}
+
+        {(type === 'text' || !def) && (
+          <TextInput style={styles.lInput} placeholder={desc || 'Enter value'}
+            placeholderTextColor={colors.textFainter}
+            value={Array.isArray(value) ? value.join(', ') : String(value ?? '')}
+            onChangeText={(t) => editTextLabel(key, t)} />
+        )}
+      </View>
+    );
   };
 
   return (
@@ -186,6 +310,32 @@ export default function SubmitScreen({ route, navigation }) {
                 <Text style={styles.secondaryText}>🖼️ Choose</Text>
               </TouchableOpacity>
             </View>
+
+            {analyzing && (
+              <View style={styles.aiRow}>
+                <ActivityIndicator color={colors.indigo} size="small" />
+                <Text style={styles.aiText}>🤖 Analyzing photo with AI…</Text>
+              </View>
+            )}
+
+            {relevance && relevance.score < 60 && (
+              <View style={styles.relevanceWarn}>
+                <Text style={styles.relevanceWarnText}>
+                  ⚠️ Low relevance ({relevance.score}/100): {relevance.note || 'This photo may not match the quest and could be rejected.'}
+                </Text>
+              </View>
+            )}
+
+            {labels && (
+              <View style={styles.labelBox}>
+                <Text style={styles.aiBadge}>
+                  {labelSource === 'claude' ? '🤖 AI-suggested · Claude' : '🤖 AI-suggested'}
+                  {labelSchema ? `  ·  ${labelSchema}` : ''}
+                </Text>
+                {Object.keys(labels).map((k) => renderLabelField(k))}
+                <Text style={styles.hint}>✏️ Confirm or adjust each field — your input is stored as human-validated.</Text>
+              </View>
+            )}
           </View>
         )}
 
@@ -289,7 +439,21 @@ const styles = StyleSheet.create({
   secondary: { flex: 1, backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: 10, paddingVertical: 14, alignItems: 'center' },
   secondaryText: { color: colors.text, fontWeight: '600', fontSize: 14 },
   fieldLabel: { color: colors.textMuted, fontSize: 13, fontWeight: '500', marginBottom: 4 },
+  fieldName: { color: colors.text, fontSize: 13, fontWeight: '700', marginBottom: 2, textTransform: 'capitalize' },
+  fieldDesc: { color: colors.textFaint, fontSize: 11, marginBottom: 7, lineHeight: 15 },
+  optChip: { backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: 999, paddingVertical: 8, paddingHorizontal: 14 },
+  boolBtn: { flex: 1, backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
+  boolYes: { borderColor: colors.tealDeep, backgroundColor: 'rgba(20,184,166,0.12)' },
+  boolNo: { borderColor: colors.red, backgroundColor: 'rgba(248,113,113,0.12)' },
+  relevanceWarn: { backgroundColor: 'rgba(251,191,36,0.1)', borderColor: 'rgba(251,191,36,0.35)', borderWidth: 1, borderRadius: 12, padding: 12, marginTop: 4 },
+  relevanceWarnText: { color: colors.amber, fontSize: 12, lineHeight: 17 },
   input: { backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: 12, padding: 14, color: colors.text, fontSize: 14, minHeight: 90, textAlignVertical: 'top' },
+  lInput: { backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, color: colors.text, fontSize: 14 },
+  aiRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
+  aiText: { color: colors.indigo, fontSize: 13 },
+  labelBox: { backgroundColor: 'rgba(99,102,241,0.06)', borderColor: 'rgba(99,102,241,0.25)', borderWidth: 1, borderRadius: 14, padding: 14, marginTop: 4 },
+  aiBadge: { color: colors.textMuted, fontSize: 11, fontWeight: '600', marginBottom: 10 },
+  hint: { color: colors.textFaint, fontSize: 11, marginTop: 2 },
   chip: { backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 18, alignItems: 'center' },
   chipActive: { borderColor: colors.tealDeep, backgroundColor: 'rgba(20,184,166,0.12)' },
   chipText: { color: colors.textMuted, fontWeight: '600' },

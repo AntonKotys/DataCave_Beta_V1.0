@@ -35,19 +35,29 @@ public class SubmissionController {
             @RequestParam Long questId,
             @RequestParam(required = false) String type,
             @RequestParam(required = false) MultipartFile file,
-            @RequestParam(required = false) String payload) {
+            @RequestParam(required = false) String payload,
+            @RequestParam(required = false) String labels,
+            @RequestParam(required = false) String aiLabels,
+            @RequestParam(required = false, defaultValue = "false") boolean humanValidated,
+            @RequestParam(required = false) String labelSource,
+            @RequestParam(required = false, defaultValue = "false") boolean simulateReject) {
         try {
-            Map<String, Object> data = null;
-            if (payload != null && !payload.isBlank()) {
-                data = mapper.readValue(payload, new TypeReference<Map<String, Object>>() {});
-            }
-            Submission s = service.submit(contributorId, questId, type, file, data);
+            Map<String, Object> data = parse(payload);
+            Map<String, Object> finalLabels = parse(labels);
+            Map<String, Object> ai = parse(aiLabels);
+            Submission s = service.submit(contributorId, questId, type, file, data,
+                    finalLabels, ai, humanValidated, labelSource, simulateReject);
             return ResponseEntity.status(HttpStatus.CREATED).body(s);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }
+    }
+
+    private Map<String, Object> parse(String json) throws Exception {
+        if (json == null || json.isBlank()) return null;
+        return mapper.readValue(json, new TypeReference<Map<String, Object>>() {});
     }
 
     @GetMapping("/{id}/file")

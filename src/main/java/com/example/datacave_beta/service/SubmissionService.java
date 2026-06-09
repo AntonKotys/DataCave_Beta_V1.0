@@ -1,6 +1,8 @@
 package com.example.datacave_beta.service;
 
 import com.example.datacave_beta.model.Acceptance;
+import com.example.datacave_beta.model.AnnotationSchema;
+import com.example.datacave_beta.model.Contributor;
 import com.example.datacave_beta.model.Quest;
 import com.example.datacave_beta.model.Submission;
 import lombok.RequiredArgsConstructor;
@@ -24,9 +26,19 @@ import java.util.concurrent.ThreadLocalRandom;
 public class SubmissionService {
 
     private final Store store;
+    private final ExpertService expertService;
+    private final LabelingService labelingService;
 
-    /** Mark a quest as started for a contributor (idempotent). */
+    @org.springframework.beans.factory.annotation.Value("${datacave.quality.min-relevance-score:60}")
+    private int minRelevanceScore;
+
+    /** Mark a quest as started for a contributor (idempotent). Enforces tier/expert gating (B). */
     public Acceptance acceptQuest(Long contributorId, Long questId) {
+        Quest quest = store.quest(questId);
+        Contributor contributor = store.contributor(contributorId);
+        String locked = expertService.lockedReason(quest, contributor);
+        if (locked != null) throw new IllegalArgumentException(locked);
+
         Optional<Acceptance> existing = store.acceptances().stream()
                 .filter(a -> a.getContributorId().equals(contributorId)
                         && a.getQuestId().equals(questId)
@@ -49,7 +61,10 @@ public class SubmissionService {
      * and the reward is credited (reflected in the dashboard).
      */
     public Submission submit(Long contributorId, Long questId, String type,
-                             MultipartFile file, Map<String, Object> payload) throws IOException {
+                             MultipartFile file, Map<String, Object> payload,
+                             Map<String, Object> labels, Map<String, Object> aiLabels,
+                             boolean humanValidated, String labelSource,
+                             boolean simulateReject) throws IOException {
         Quest quest = store.quest(questId);
         if (quest == null) throw new IllegalArgumentException("Unknown quest " + questId);
 
@@ -72,9 +87,37 @@ public class SubmissionService {
             size = file.getSize();
         }
 
-        // Auto-review: prototype quality model.
-        int quality = ThreadLocalRandom.current().nextInt(85, 100);
-        boolean accepted = quality >= 80; // always true here, but models the gate
+        // Quality verification: run AI relevance check on photo submissions.
+        int relevanceScore = 100;
+        String relevanceNote = null;
+        if (file != null && !file.isEmpty() && storedName != null) {
+            try {
+                AnnotationSchema schema = quest.getSchemaId() != null
+                        ? store.schema(quest.getSchemaId()) : null;
+                byte[] bytes = java.nio.file.Files.readAllBytes(store.uploadDir().resolve(storedName));
+                LabelingService.LabelResult check = labelingService.analyze(bytes, contentType, quest.getCategory(), schema);
+                relevanceScore = check.getRelevanceScore();
+                relevanceNote = check.getRelevanceNote();
+                // Merge AI labels if none were supplied by the client.
+                if (aiLabels == null && check.getLabels() != null && !check.getLabels().isEmpty()) {
+                    aiLabels = check.getLabels();
+                    if (labels == null) labels = check.getLabels();
+                }
+            } catch (Exception e) {
+                log.warn("Relevance check failed: {}", e.getMessage());
+            }
+        }
+
+        // Demo toggle: force-reject every submission (used to test the rejection flow).
+        if (simulateReject) {
+            relevanceScore = 0;
+            relevanceNote = null;
+        }
+
+        // Accept only if relevance meets the minimum threshold.
+        boolean relevant = relevanceScore >= minRelevanceScore;
+        int quality = relevant ? ThreadLocalRandom.current().nextInt(78, 100) : relevanceScore;
+        boolean accepted = relevant;
         long now = System.currentTimeMillis();
 
         long id = store.nextSubmissionId();
@@ -89,11 +132,17 @@ public class SubmissionService {
                 .contentType(contentType)
                 .fileSize(size)
                 .payload(payload)
-                .status(accepted ? "ACCEPTED" : "PENDING_REVIEW")
+                .labels(labels)
+                .aiLabels(aiLabels)
+                .humanValidated(humanValidated)
+                .labelSource(labelSource)
+                .relevanceScore(relevanceScore)
+                .relevanceNote(relevanceNote)
+                .status(accepted ? "ACCEPTED" : "REJECTED")
                 .reward(accepted ? quest.getReward() : 0.0)
                 .qualityScore(quality)
                 .submittedAt(now)
-                .reviewedAt(accepted ? now : 0)
+                .reviewedAt(now)
                 .build();
         store.putSubmission(s);
 

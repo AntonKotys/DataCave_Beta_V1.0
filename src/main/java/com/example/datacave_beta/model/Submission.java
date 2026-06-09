@@ -31,4 +31,14 @@ public class Submission {
     private int qualityScore;     // 0-100 auto quality estimate
     private long submittedAt;     // epoch millis
     private long reviewedAt;      // epoch millis (0 if not reviewed)
+
+    // --- AI pre-labeling (human-in-the-loop) --------------------------------
+    private Map<String, Object> aiLabels; // labels the AI generated automatically
+    private Map<String, Object> labels;   // final labels (human-confirmed/corrected)
+    private boolean humanValidated;        // true once a contributor confirmed/edited the AI labels
+    private String labelSource;            // "claude", "mock", or "manual"
+
+    // --- quality verification -----------------------------------------------
+    private int relevanceScore;   // 0-100 AI-assessed relevance to the quest
+    private String relevanceNote; // short explanation (e.g. "Not an outfit photo")
 }

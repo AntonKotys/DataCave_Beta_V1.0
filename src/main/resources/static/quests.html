@@ -106,6 +106,24 @@
   let allQuests = [];
   let activeCategory = 'all';
 
+  let me = null; // contributor profile (tier + expert status) for lock checks
+  fetch('/api/contributor/1').then(r => r.ok ? r.json() : null).then(p => { me = p; }).catch(() => {});
+
+  const TIER_RANK = { 'Bronze Contributor': 1, 'Silver Mapper': 2, 'Gold Researcher': 3, 'Verified Expert': 4 };
+  function lockedReason(q) {
+    if (!me) return null;
+    if (q.expertOnly) {
+      const ok = me.expertVerified && (me.expertDomains || []).includes(q.domain);
+      if (!ok) return `Requires Verified Expert in "${q.domain}"`;
+    }
+    if (q.requiredTier) {
+      let have = TIER_RANK[me.tier] || 1;
+      if (me.expertVerified) have = Math.max(have, 4);
+      if (have < (TIER_RANK[q.requiredTier] || 0)) return `Requires ${q.requiredTier}+`;
+    }
+    return null;
+  }
+
   fetch('/api/quests')
     .then(r => r.json())
     .then(data => {
@@ -146,6 +164,8 @@
             </div>
             <span class="text-teal-400 font-bold text-lg">$${q.reward.toFixed(2)}</span>
           </div>
+          ${q.expertOnly ? '<span class="pill text-amber-400 mb-2 inline-block">🔒 Expert only</span>' : (q.requiredTier ? `<span class="pill text-indigo-300 mb-2 inline-block">🔒 ${q.requiredTier}+</span>` : '')}
+          ${q.schemaId ? '<span class="pill text-teal-400 mb-2 inline-block ml-1">🏷️ schema</span>' : ''}
           <h3 class="font-semibold text-sm mb-2 leading-snug">${q.title}</h3>
           <p class="text-slate-500 text-xs mb-4 leading-relaxed line-clamp-2">${q.description}</p>
           <div class="flex items-center gap-2 flex-wrap mb-4">
@@ -228,7 +248,7 @@
       </div>
     `;
     modalQuest = q;
-    collected = { file: null, payload: null };
+    collected = { file: null, payload: null, labels: null, aiLabels: null, labelSource: null, schemaFields: null };
     renderCollector(q);
     document.getElementById('modal').classList.remove('hidden');
     document.getElementById('modal').classList.add('flex');
@@ -236,7 +256,7 @@
 
   // ---- collection logic ---------------------------------------------------
   let modalQuest = null;
-  let collected = { file: null, payload: null };
+  let collected = { file: null, payload: null, labels: null, aiLabels: null, labelSource: null, schemaFields: null };
   let mediaRecorder = null;
   let audioChunks = [];
 
@@ -262,7 +282,8 @@
           <span class="btn-outline inline-block text-sm py-2 px-4 cursor-pointer">📷 Take / choose photo</span>
           <input type="file" accept="image/*" capture="environment" class="hidden" onchange="onPhotoPick(event)"/>
         </label>
-        <img id="photo-preview" class="hidden mt-3 rounded-lg max-h-48 w-full object-cover"/>`;
+        <img id="photo-preview" class="hidden mt-3 rounded-lg max-h-48 w-full object-cover"/>
+        <div id="label-editor" class="hidden mt-4"></div>`;
     } else if (mode === 'AUDIO') {
       c.innerHTML = `
         <div class="flex gap-2 items-center">
@@ -294,14 +315,148 @@
     }
   }
 
-  function onPhotoPick(e) {
+  async function onPhotoPick(e) {
     const f = e.target.files[0];
     if (!f) return;
     collected.file = f;
     const img = document.getElementById('photo-preview');
     img.src = URL.createObjectURL(f);
     img.classList.remove('hidden');
-    setStatus('Photo ready ✓', 'text-green-400');
+    setStatus('🤖 Analyzing photo with AI…', 'text-indigo-300');
+
+    // AI pre-labeling: send the photo to the backend for automatic labels.
+    try {
+      const form = new FormData();
+      form.append('file', f);
+      form.append('questId', String(modalQuest.id));
+      const res = await fetch('/api/labeling/analyze', { method: 'POST', body: form });
+      if (!res.ok) throw new Error('analyze failed');
+      const result = await res.json();
+      collected.aiLabels = result.labels;
+      collected.labels = JSON.parse(JSON.stringify(result.labels));
+      collected.labelSource = result.source;
+      collected.schemaFields = result.schemaFields || null;
+      // Show relevance warning if score is low
+      if (result.relevanceScore != null && result.relevanceScore < 60) {
+        setStatus(`⚠️ Low relevance (${result.relevanceScore}/100): ${result.relevanceNote || 'This photo may not match the quest.'}`, 'text-amber-400');
+      } else {
+        setStatus('Review the AI labels below, then submit ✓', 'text-green-400');
+      }
+      renderLabelEditor(result);
+    } catch (err) {
+      setStatus('Photo ready (AI labeling unavailable — submit as-is)', 'text-amber-400');
+    }
+  }
+
+  // Build a field definition map keyed by name (for fast lookup).
+  function fieldMap(schemaFields) {
+    const m = {};
+    if (schemaFields) schemaFields.forEach(f => m[f.name] = f);
+    return m;
+  }
+
+  // Render a single label field with the correct input control.
+  function renderFieldControl(key, value, field) {
+    const type  = field ? field.type : 'text';
+    const opts  = field ? (field.options || []) : [];
+    const desc  = field ? field.description : '';
+    const req   = field ? field.required : false;
+    const hint  = desc ? `<div class="text-xs text-slate-500 mb-1">${desc}${req ? ' <span class="text-red-400">*</span>' : ''}</div>` : '';
+
+    if (type === 'single-choice') {
+      const options = opts.map(o =>
+        `<option value="${o}" ${value === o ? 'selected' : ''}>${o}</option>`
+      ).join('');
+      return `${hint}<select data-key="${key}" onchange="editLabelSelect(this)"
+          class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-teal-500">
+          <option value="">— choose —</option>${options}
+        </select>`;
+    }
+
+    if (type === 'multi-choice') {
+      const selected = Array.isArray(value) ? value : (value ? [String(value)] : []);
+      const boxes = opts.map(o => `
+        <label class="flex items-center gap-2 cursor-pointer py-1">
+          <input type="checkbox" data-multi="${key}" value="${o}"
+            ${selected.includes(o) ? 'checked' : ''}
+            onchange="editMultiLabel('${key}')"
+            class="accent-teal-500 w-4 h-4"/>
+          <span class="text-sm">${o}</span>
+        </label>`).join('');
+      return `${hint}<div class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2">${boxes}</div>`;
+    }
+
+    if (type === 'boolean') {
+      const isTrue  = value === true  || value === 'true';
+      const isFalse = value === false || value === 'false';
+      return `${hint}<div class="flex gap-2">
+        <button onclick="editBoolLabel('${key}', true)"  id="bool-yes-${key}"
+          class="flex-1 py-2 rounded-lg text-sm font-semibold border transition-colors ${isTrue  ? 'bg-teal-800 border-teal-500 text-teal-200' : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'}">
+          Yes
+        </button>
+        <button onclick="editBoolLabel('${key}', false)" id="bool-no-${key}"
+          class="flex-1 py-2 rounded-lg text-sm font-semibold border transition-colors ${isFalse ? 'bg-red-900  border-red-600  text-red-200'  : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'}">
+          No
+        </button>
+      </div>`;
+    }
+
+    if (type === 'number') {
+      return `${hint}<input type="number" data-key="${key}" value="${value != null ? value : ''}"
+        oninput="editLabelInput(this)"
+        class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-teal-500"
+        placeholder="${desc}"/>`;
+    }
+
+    // text (default)
+    return `${hint}<input type="text" data-key="${key}" value="${String(value ?? '').replace(/"/g,'&quot;')}"
+      oninput="editLabelInput(this)"
+      class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-teal-500"
+      placeholder="${desc}"/>`;
+  }
+
+  // Render editable AI labels for human validation (human-in-the-loop).
+  function renderLabelEditor(result) {
+    const ed = document.getElementById('label-editor');
+    if (!ed) return;
+    const badge = result.source === 'claude'
+      ? '<span class="pill text-teal-400">🤖 AI-suggested · ' + (result.model || 'Claude') + '</span>'
+      : '';
+    const schemaPill = result.schema
+      ? `<span class="pill ${badge ? 'ml-2' : ''}">🏷️ ${result.schema}</span>` : '';
+    const fmap = fieldMap(collected.schemaFields);
+    const rows = Object.entries(collected.labels).map(([k, v]) =>
+      `<div class="mb-4">
+        <div class="text-xs font-semibold text-slate-300 mb-1">${k.replace(/_/g,' ')}</div>
+        ${renderFieldControl(k, v, fmap[k] || null)}
+       </div>`
+    ).join('');
+    ed.innerHTML = `
+      <div class="flex flex-wrap items-center gap-2 mb-4">${badge}${schemaPill}</div>
+      ${rows}
+      <div class="text-xs text-slate-500 mt-2">✏️ Confirm or adjust each field — your input is stored as human-validated.</div>`;
+    ed.classList.remove('hidden');
+  }
+
+  function editLabelInput(input) {
+    const k = input.dataset.key;
+    const original = collected.aiLabels ? collected.aiLabels[k] : undefined;
+    let v = input.value;
+    if (typeof original === 'number') { const n = Number(v); if (!isNaN(n)) v = n; }
+    collected.labels[k] = v;
+  }
+  function editLabelSelect(sel) {
+    collected.labels[sel.dataset.key] = sel.value;
+  }
+  function editMultiLabel(key) {
+    const checked = [...document.querySelectorAll(`[data-multi="${key}"]:checked`)].map(c => c.value);
+    collected.labels[key] = checked;
+  }
+  function editBoolLabel(key, val) {
+    collected.labels[key] = val;
+    // Update button styles
+    document.getElementById(`bool-yes-${key}`).className = `flex-1 py-2 rounded-lg text-sm font-semibold border transition-colors ${val ? 'bg-teal-800 border-teal-500 text-teal-200' : 'bg-slate-800 border-slate-700 text-slate-400'}`;
+    document.getElementById(`bool-no-${key}`).className  = `flex-1 py-2 rounded-lg text-sm font-semibold border transition-colors ${!val ? 'bg-red-900 border-red-600 text-red-200' : 'bg-slate-800 border-slate-700 text-slate-400'}`;
   }
 
   function onAudioPick(e) {
@@ -389,10 +544,25 @@
       form.append('type', mode);
       if (collected.file) form.append('file', collected.file);
       if (collected.payload) form.append('payload', JSON.stringify(collected.payload));
+      if (collected.labels) {
+        form.append('labels', JSON.stringify(collected.labels));
+        form.append('humanValidated', 'true');
+      }
+      if (collected.aiLabels) form.append('aiLabels', JSON.stringify(collected.aiLabels));
+      if (collected.labelSource) form.append('labelSource', collected.labelSource);
       const res = await fetch('/api/submissions', { method: 'POST', body: form });
-      if (!res.ok) throw new Error('Submission failed (' + res.status + ')');
+      if (!res.ok) {
+        let msg = 'Submission failed (' + res.status + ')';
+        try { const j = await res.json(); if (j.error) msg = (res.status === 403 ? '🔒 ' : '') + j.error; } catch (_) {}
+        throw new Error(msg);
+      }
       const sub = await res.json();
-      setStatus(`✓ Accepted! Quality ${sub.qualityScore}/100 — you earned $${sub.reward.toFixed(2)}`, 'text-green-400');
+      if (sub.status === 'REJECTED') {
+        setStatus(`✗ Rejected — ${sub.relevanceNote || 'Photo did not match quest requirements.'} (relevance ${sub.relevanceScore}/100)`, 'text-red-400');
+        btn.disabled = false; btn.textContent = `Submit & Earn $${q.reward.toFixed(2)}`;
+        return;
+      }
+      setStatus(`✓ Accepted! Quality ${sub.qualityScore}/100 · Relevance ${sub.relevanceScore}/100 — you earned $${sub.reward.toFixed(2)}`, 'text-green-400');
       btn.textContent = 'Submitted ✓';
       // refresh quest list to show updated progress
       const data = await api_getQuests();
