@@ -1,0 +1,72 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DataCave — Concept 3: Quest Arcade</title><style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+body{font-family:"SF Pro Rounded","SF Pro Display",-apple-system,sans-serif;background:linear-gradient(160deg,#241046,#5b2bd6);padding:34px;display:flex;flex-direction:column;align-items:center;gap:18px;min-height:100vh}
+.hdr{text-align:center}
+.hdr h1{font-size:24px;font-weight:800;color:#fff;letter-spacing:-.3px}
+.hdr p{font-size:12.5px;color:#cdb8ff;margin-top:4px}
+.row{display:flex;gap:26px;flex-wrap:wrap;justify-content:center}
+.phone{width:330px;height:700px;background:#160a2e;border-radius:46px;box-shadow:0 30px 70px rgba(40,10,90,.55),0 0 0 1px rgba(255,255,255,.05);padding:13px;position:relative}
+.notch{position:absolute;top:13px;left:50%;transform:translateX(-50%);width:110px;height:25px;background:#160a2e;border-radius:0 0 16px 16px;z-index:5}
+.scr{height:100%;border-radius:34px;overflow:hidden;background:radial-gradient(120% 60% at 50% 0%,#3a1d76,#1a0e33);position:relative}
+.sb{display:flex;justify-content:space-between;padding:14px 22px 4px;font-size:11px;font-weight:700;color:#fff}
+.top{display:flex;align-items:center;gap:8px;padding:8px 20px 14px}
+.coin{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.12);padding:6px 12px;border-radius:30px;font-size:13px;font-weight:800;color:#ffd84d}
+.streak{display:flex;align-items:center;gap:5px;background:rgba(255,120,60,.18);border:1px solid rgba(255,150,80,.25);padding:6px 12px;border-radius:30px;font-size:13px;font-weight:800;color:#ff9a5c}
+.av{margin-left:auto;width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#ff7eb3,#7a5cff);display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:13px}
+.h2{font-size:25px;font-weight:800;color:#fff;padding:2px 20px 4px;letter-spacing:-.4px}
+.sb2{font-size:13px;color:#b9a3ef;padding:0 20px 12px}
+.chips{display:flex;gap:8px;padding:0 20px 14px;overflow:hidden}
+.chip{font-size:12px;font-weight:700;color:#cdb8ff;background:rgba(255,255,255,.07);padding:7px 14px;border-radius:20px;white-space:nowrap}
+.chip.on{background:linear-gradient(135deg,#ff7eb3,#9b5cff);color:#fff}
+.qc{margin:0 18px 13px;border-radius:24px;padding:16px;position:relative;overflow:hidden}
+.q1{background:linear-gradient(135deg,#ff7eb3,#ff5e8a)}
+.q2{background:linear-gradient(135deg,#4dd0e1,#3a8ef0)}
+.q3{background:linear-gradient(135deg,#ffd24d,#ff9d3c)}
+.qc .top2{display:flex;align-items:center;gap:9px}
+.emoji{width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;font-size:23px}
+.qc h3{color:#fff;font-size:15.5px;font-weight:800;letter-spacing:-.2px}
+.qc .co{color:rgba(255,255,255,.85);font-size:12px;font-weight:600;margin-top:1px}
+.rwd{margin-left:auto;background:rgba(0,0,0,.22);color:#fff;font-size:15px;font-weight:800;padding:7px 12px;border-radius:14px}
+.pbar{height:8px;background:rgba(0,0,0,.2);border-radius:10px;margin-top:13px;overflow:hidden}
+.pf{height:100%;background:rgba(255,255,255,.92);border-radius:10px}
+.pm{display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:rgba(255,255,255,.9);margin-top:7px}
+.tab{position:absolute;bottom:0;left:0;right:0;height:66px;background:rgba(22,10,46,.9);backdrop-filter:blur(14px);border-top:1px solid rgba(255,255,255,.07);display:flex;justify-content:space-around;align-items:center;padding-bottom:8px}
+.tab span{font-size:22px;opacity:.4}.tab .a{opacity:1}
+.hero{margin:6px 18px 14px;border-radius:26px;padding:20px;background:linear-gradient(135deg,#9b5cff,#ff7eb3);position:relative;overflow:hidden}
+.hero .l{font-size:12px;font-weight:700;color:rgba(255,255,255,.85)}
+.hero .v{font-size:40px;font-weight:800;color:#fff;letter-spacing:-1px;margin-top:2px}
+.hero .pill{display:inline-block;margin-top:8px;background:rgba(0,0,0,.2);color:#fff;font-size:11px;font-weight:700;padding:5px 11px;border-radius:20px}
+.lvl{margin:0 18px 14px;background:rgba(255,255,255,.06);border-radius:22px;padding:16px;display:flex;align-items:center;gap:16px}
+.ring{width:74px;height:74px;border-radius:50%;background:conic-gradient(#ffd84d 0% 68%,rgba(255,255,255,.12) 68% 100%);display:flex;align-items:center;justify-content:center}
+.ring i{width:58px;height:58px;border-radius:50%;background:#1a0e33;display:flex;flex-direction:column;align-items:center;justify-content:center;font-style:normal}
+.ring b{color:#fff;font-size:17px;font-weight:800}.ring s{color:#b9a3ef;font-size:9px;text-decoration:none}
+.lvl h4{color:#fff;font-size:16px;font-weight:800}.lvl p{color:#b9a3ef;font-size:12px;margin-top:3px}
+.badges{display:flex;gap:9px;padding:0 20px 14px}
+.bg{width:50px;height:50px;border-radius:16px;background:rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;font-size:24px}
+.sec{color:#fff;font-size:14px;font-weight:800;padding:2px 20px 9px}
+</style></head><body>
+<div class="hdr"><h1>Concept 3 &mdash; &ldquo;Quest Arcade&rdquo;</h1><p>Playful &amp; gamified &middot; vibrant gradients, XP, streaks, badges &mdash; leans into the &ldquo;data quests&rdquo; idea</p></div>
+<div class="row">
+  <div class="phone"><div class="notch"></div><div class="scr">
+    <div class="sb"><span>9:41</span><span>5G &nbsp;100%</span></div>
+    <div class="top"><span class="coin">🪙 847</span><span class="streak">🔥 12</span><span class="av">AM</span></div>
+    <div class="h2">Pick a quest 🎯</div><div class="sb2">Earn coins, level up, top the leaderboard</div>
+    <div class="chips"><span class="chip on">All</span><span class="chip">🎙️ Audio</span><span class="chip">📸 Photo</span><span class="chip">🩺 Health</span></div>
+    <div class="qc q1"><div class="top2"><div class="emoji">🎙️</div><div><h3>Urban Street Audio</h3><div class="co">SoundAI &middot; ~5 min</div></div><div class="rwd">+$2.50</div></div><div class="pbar"><div class="pf" style="width:62%"></div></div><div class="pm"><span>312 done</span><span>62% 🔥</span></div></div>
+    <div class="qc q2"><div class="top2"><div class="emoji">📸</div><div><h3>Grocery Shelf Map</h3><div class="co">RetailVision &middot; ~10 min</div></div><div class="rwd">+$3.75</div></div><div class="pbar"><div class="pf" style="width:73%"></div></div><div class="pm"><span>734 done</span><span>73% ⚡</span></div></div>
+    <div class="qc q3"><div class="top2"><div class="emoji">🩺</div><div><h3>Sleep Survey</h3><div class="co">HealthAI &middot; ~15 min</div></div><div class="rwd">+$8.00</div></div><div class="pbar"><div class="pf" style="width:14%"></div></div><div class="pm"><span>203 done</span><span>NEW ✨</span></div></div>
+    <div class="tab"><span class="a">🎯</span><span>🏆</span><span>👤</span></div>
+  </div></div>
+  <div class="phone"><div class="notch"></div><div class="scr">
+    <div class="sb"><span>9:41</span><span>5G &nbsp;100%</span></div>
+    <div class="h2" style="padding-top:14px">Your progress 🚀</div><div class="sb2">Keep your 12-day streak alive!</div>
+    <div class="hero"><div class="l">💰 Total earned</div><div class="v">$847.30</div><span class="pill">&#9650; +$42.50 this week</span></div>
+    <div class="lvl"><div class="ring"><i><b>68%</b><s>to Gold</s></i></div><div><h4>🥈 Silver Mapper</h4><p>340 / 500 XP to Gold Researcher</p></div></div>
+    <div class="sec">🏅 Badges</div>
+    <div class="badges"><div class="bg">🚀</div><div class="bg">🎙️</div><div class="bg">🔥</div><div class="bg">⭐</div><div class="bg">🏆</div></div>
+    <div class="sec">⚔️ Active quests</div>
+    <div class="qc q1" style="margin-bottom:0"><div class="top2"><div class="emoji">🎙️</div><div><h3>Urban Street Audio</h3><div class="co">Due Jun 15</div></div><div class="rwd">+$2.50</div></div></div>
+    <div class="tab"><span>🎯</span><span class="a">🏆</span><span>👤</span></div>
+  </div></div>
+</div>
+</body></html>

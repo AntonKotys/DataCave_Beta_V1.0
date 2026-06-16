@@ -1,0 +1,71 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DataCave — Concept 2: Launch Control</title><style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+body{font-family:"SF Pro Display",-apple-system,sans-serif;background:#0a0a0a;padding:34px;display:flex;flex-direction:column;align-items:center;gap:18px;min-height:100vh}
+.mono{font-family:ui-monospace,"SF Mono","Roboto Mono",monospace}
+.hdr{text-align:center}
+.hdr h1{font-size:23px;font-weight:700;color:#fff;letter-spacing:2px;text-transform:uppercase}
+.hdr p{font-size:12px;color:#666;margin-top:4px;letter-spacing:.5px}
+.row{display:flex;gap:26px;flex-wrap:wrap;justify-content:center}
+.phone{width:330px;height:700px;background:#000;border-radius:46px;box-shadow:0 0 0 1px #1c1c1c,0 30px 70px rgba(0,0,0,.7);padding:13px;position:relative}
+.notch{position:absolute;top:13px;left:50%;transform:translateX(-50%);width:110px;height:25px;background:#000;border-radius:0 0 16px 16px;z-index:5}
+.scr{height:100%;border-radius:34px;overflow:hidden;background:#000;position:relative;border:1px solid #141414}
+.grid{position:absolute;inset:0;background-image:linear-gradient(#0e0e0e 1px,transparent 1px),linear-gradient(90deg,#0e0e0e 1px,transparent 1px);background-size:34px 34px;opacity:.5}
+.sb{display:flex;justify-content:space-between;padding:14px 22px 4px;font-size:11px;font-weight:600;color:#fff;position:relative}
+.nav{padding:10px 22px 6px;position:relative;border-bottom:1px solid #161616}
+.kick{font-size:10px;letter-spacing:3px;color:#5a6b7a;text-transform:uppercase}
+.nav h2{font-size:22px;font-weight:700;color:#fff;letter-spacing:1px;text-transform:uppercase;margin-top:3px}
+.tele{display:flex;gap:0;border-bottom:1px solid #161616;position:relative}
+.tele div{flex:1;padding:11px 14px;border-right:1px solid #161616}
+.tele div:last-child{border-right:none}
+.tele .l{font-size:9px;letter-spacing:1.5px;color:#5a6b7a;text-transform:uppercase}
+.tele .v{font-size:16px;color:#fff;margin-top:3px}
+.tele .v b{color:#4da3ff}
+.list{position:relative;padding:6px 0}
+.item{padding:14px 22px;border-bottom:1px solid #121212;position:relative}
+.it-top{display:flex;align-items:center;gap:10px}
+.tag{font-size:9px;letter-spacing:1.5px;color:#5a6b7a;text-transform:uppercase;border:1px solid #222;padding:2px 7px;border-radius:3px}
+.amt{margin-left:auto;font-size:16px;color:#4da3ff;font-weight:600}
+.it h3{font-size:14px;color:#e8e8e8;font-weight:600;margin-top:9px;letter-spacing:.3px}
+.line{display:flex;justify-content:space-between;margin-top:9px;font-size:10px;letter-spacing:1px;color:#5a6b7a;text-transform:uppercase}
+.tk{height:3px;background:#141414;margin-top:7px;position:relative}
+.tkf{height:100%;background:#4da3ff;position:relative}
+.tab{position:absolute;bottom:0;left:0;right:0;height:60px;background:#000;border-top:1px solid #161616;display:flex;justify-content:space-around;align-items:center}
+.tab span{font-size:9px;letter-spacing:2px;color:#444;text-transform:uppercase}
+.tab .a{color:#4da3ff}
+.big{position:relative;padding:22px 22px 16px;border-bottom:1px solid #161616}
+.big .l{font-size:10px;letter-spacing:3px;color:#5a6b7a;text-transform:uppercase}
+.big .v{font-size:46px;color:#fff;font-weight:700;letter-spacing:-1px;margin-top:6px}
+.big .v small{font-size:20px;color:#4da3ff}
+.big .d{font-size:11px;letter-spacing:1px;color:#3a7a3a;text-transform:uppercase;margin-top:4px}
+.ring{position:relative;padding:18px 22px;display:flex;align-items:center;gap:18px;border-bottom:1px solid #161616}
+.rc{width:78px;height:78px;border-radius:50%;background:conic-gradient(#4da3ff 0% 68%,#161616 68% 100%);display:flex;align-items:center;justify-content:center}
+.rc i{width:60px;height:60px;border-radius:50%;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;font-style:normal}
+.rc i b{font-size:18px;color:#fff}.rc i s{font-size:8px;color:#5a6b7a;letter-spacing:1px;text-decoration:none;text-transform:uppercase}
+.rt .l{font-size:10px;letter-spacing:2px;color:#5a6b7a;text-transform:uppercase}
+.rt h4{font-size:16px;color:#fff;margin-top:3px;letter-spacing:.5px}
+.rt p{font-size:11px;color:#5a6b7a;margin-top:4px;letter-spacing:1px}
+</style></head><body>
+<div class="hdr"><h1>Concept 2 &mdash; &ldquo;Launch Control&rdquo;</h1><p>SpaceX vibes &middot; black, technical, telemetry readouts &middot; monospace data, hairline grid</p></div>
+<div class="row">
+  <div class="phone"><div class="notch"></div><div class="scr"><div class="grid"></div>
+    <div class="sb"><span class="mono">09:41</span><span class="mono">5G &middot; 100%</span></div>
+    <div class="nav"><div class="kick">DataCave // Contributor</div><h2>Mission Board</h2></div>
+    <div class="tele"><div><div class="l">Balance</div><div class="v mono"><b>$847.30</b></div></div><div><div class="l">Active</div><div class="v mono">03</div></div><div><div class="l">Rank</div><div class="v mono">1204</div></div></div>
+    <div class="list">
+      <div class="item"><div class="it-top"><span class="tag">Audio</span><span class="mono" style="font-size:10px;color:#5a6b7a;letter-spacing:1px">T-12D</span><span class="amt mono">$2.50</span></div><h3>URBAN STREET AUDIO COLLECTION</h3><div class="line"><span>SoundAI Labs</span><span>312 / 500</span></div><div class="tk"><div class="tkf" style="width:62%"></div></div></div>
+      <div class="item"><div class="it-top"><span class="tag">Image</span><span class="mono" style="font-size:10px;color:#5a6b7a;letter-spacing:1px">T-17D</span><span class="amt mono">$3.75</span></div><h3>GROCERY SHELF PHOTO MAPPING</h3><div class="line"><span>RetailVision</span><span>734 / 1000</span></div><div class="tk"><div class="tkf" style="width:73%"></div></div></div>
+      <div class="item"><div class="it-top"><span class="tag">Health</span><span class="mono" style="font-size:10px;color:#5a6b7a;letter-spacing:1px">T-27D</span><span class="amt mono">$8.00</span></div><h3>SLEEP PATTERN SURVEY</h3><div class="line"><span>HealthAI</span><span>203 / 1500</span></div><div class="tk"><div class="tkf" style="width:14%"></div></div></div>
+    </div>
+    <div class="tab"><span class="a">BOARD</span><span>TELEMETRY</span><span>PROFILE</span></div>
+  </div></div>
+  <div class="phone"><div class="notch"></div><div class="scr"><div class="grid"></div>
+    <div class="sb"><span class="mono">09:41</span><span class="mono">5G &middot; 100%</span></div>
+    <div class="nav"><div class="kick">Operator // Alex M.</div><h2>Telemetry</h2></div>
+    <div class="big"><div class="l">Total Earnings</div><div class="v mono">$847<small>.30</small></div><div class="d">&#9650; +$42.50 / 7D</div></div>
+    <div class="ring"><div class="rc"><i><b>68%</b><s>to Gold</s></i></div><div class="rt"><div class="l">Tier Status</div><h4>SILVER MAPPER</h4><p>340 / 500 XP &middot; 🔥 12D STREAK</p></div></div>
+    <div class="tele" style="border-top:1px solid #161616"><div><div class="l">Completed</div><div class="v mono">73</div></div><div><div class="l">Quality</div><div class="v mono"><b>88</b></div></div><div><div class="l">Accept %</div><div class="v mono">94</div></div></div>
+    <div class="item" style="border-bottom:1px solid #121212"><div class="it-top"><span class="tag">Live</span><span class="amt mono">$2.50</span></div><h3>URBAN STREET AUDIO</h3><div class="line"><span>In progress</span><span>T-12D</span></div></div>
+    <div class="tab"><span>BOARD</span><span class="a">TELEMETRY</span><span>PROFILE</span></div>
+  </div></div>
+</div>
+</body></html>

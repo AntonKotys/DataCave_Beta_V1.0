@@ -38,3 +38,11 @@ out/
 
 ### DataCave runtime data ###
 data/
+
+# Local tooling / assistant config (not part of the project)
+.claude/
+**/.claude/
+CLAUDE.md
+**/CLAUDE.md
+AGENTS.md
+**/AGENTS.md
